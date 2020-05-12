@@ -1,0 +1,192 @@
+---
+- block:
+  # - name: debug groups
+  #   debug: var=groups
+  - name: iptables Docker | Show iptables_docker_ip_allow_set
+    debug: var=iptables_docker_ip_allow_set
+  # - name: iptables Docker | Show firewalld_custom_service
+  #   debug: var=firewalld_custom_service
+  - name: iptables Docker | iptables output (-nvL)
+    command: iptables -nvL --line-numbers
+    changed_when: false
+  # - name: pause
+  #   pause:
+  #     seconds: 10
+  when:
+    # - ansible_os_family == "RedHat"
+    # - ansible_distribution_major_version == '7'
+    - iptables_docker_managed|bool
+    # - debug_enabled_default|bool
+    - iptables_docker_show_config|bool
+  tags:
+    - iptables_docker
+    - iptables_docker_show_config
+
+- name: iptables Docker | Ensure required packages are installed
+  package:
+    name: "{{ iptables_docker_packages|default([]) }}"
+    update_cache: yes
+    state: installed
+  environment: "{{ proxy_env }}"
+  when:
+    # - ansible_os_family == "RedHat"
+#    - ansible_distribution_major_version == '7'
+    - iptables_docker_managed|bool
+    - iptables_docker_managed_pkg|bool
+  tags:
+    - iptables_docker
+    - iptables_docker_pkg_install
+
+# mkdir -p /etc/sysconfig/ipset.d
+- name: iptables Docker | Make ipset config folder
+  file:
+    path: "{{ iptables_docker_ipset_config_dir }}"
+    state: directory
+  when: iptables_docker_managed|bool
+
+- name: iptables Docker | Generate ipset config
+  template:
+    src: templates/ip_allow.set.j2
+    dest: "{{ iptables_docker_ipset_config_dir }}/ip_allow.set"
+    # validate: haproxy -f %s -c -q
+  # environment:
+  #   PATH: "/usr/sbin:/usr/local/sbin:/sbin:{{ install_haproxy_bin_dir }}"
+  register: stat_iptables_docker_copy_ipset
+  # notify:
+  #   - reload ipset
+  when: iptables_docker_managed|bool
+  tags:
+  - config
+
+- name: iptables Docker | Start ipset service
+  systemd:
+    name: ipset
+    state: started
+    enabled: yes
+  when:
+    - iptables_docker_managed|bool
+    - stat_iptables_docker_copy_ipset.changed
+
+- name: iptables Docker | Reload ipset
+  systemd:
+    name: ipset
+    state: reloaded
+  when:
+    - iptables_docker_managed|bool
+    - stat_iptables_docker_copy_ipset.changed
+
+- name: iptables Docker | Generate iptables config
+  template:
+    src: templates/iptables.j2
+    # dest: "{{ iptables_docker_iptables_config_dir }}/iptables"
+    dest: "~/ansible_iptables_docker-iptables"
+    # validate: haproxy -f %s -c -q
+  # environment:
+  #   PATH: "/usr/sbin:/usr/local/sbin:/sbin:{{ install_haproxy_bin_dir }}"
+  register: stat_iptables_docker_copy_iptables
+  # notify:
+  #   - reload tables
+  when: iptables_docker_managed|bool
+  tags:
+  - config
+
+#Moved inside iptables file
+# - name: Flush iptables
+#   iptables:
+#     chain: "{{ item }}"
+#     flush: yes
+#   with_items:  [ 'INPUT', 'DOCKER-USER', 'FILTERS' ]
+#   when: stat_iptables_docker_copy_iptables.changed
+
+- name: iptables Docker | iptables restore
+  shell: iptables-restore -n < ~/ansible_iptables_docker-iptables
+  # notify: iptables save
+  when:
+    - iptables_docker_managed|bool
+    - stat_iptables_docker_copy_iptables.changed
+
+- name: iptables Docker | iptables save
+  command: service iptables save warn=false # noqa 303
+  when:
+    - iptables_docker_managed|bool
+    - stat_iptables_docker_copy_iptables.changed
+
+- name: iptables Docker | Start iptables service
+  systemd:
+    name: iptables
+    state: started
+    enabled: yes
+  when:
+    - iptables_docker_managed|bool
+    - stat_iptables_docker_copy_iptables.changed
+    - iptables_docker_start|bool
+
+# docker iptables - testing on home centos7 swarmwork-02
+# 
+# iptables -nvL --line-numbers
+# 
+# yum install iptables iptables-services ipset ipset-service
+# 
+# vi iptables_ipset-allow.conf
+# # Recreate the ipset if needed, and flush all entries
+# create -exist ip_allow hash:ip family inet hashsize 1024 maxelem 65536
+# flush
+# # Give access to specific ips
+# #add ip_allow 192.168.2.0/24
+# add ip_allow 192.168.100.0/24
+# 
+# ipset restore < iptables_ipset-allow.conf
+# ipset list | head
+# 
+#Or instead of the .conf above, add it here:
+# mkdir -p /etc/sysconfig/ipset.d
+# vi /etc/sysconfig/ipset.d/ip_allow.set
+# # Recreate the ipset if needed, and flush all entries
+# create -exist ip_allow hash:ip family inet hashsize 1024 maxelem 65536
+# #flush
+# # Give access to specific ips
+# #add ip_allow 192.168.2.0/24
+# add ip_allow 192.168.100.0/24
+# 
+# systemctl status ipset
+# systemctl start ipset
+# systemctl enable ipset
+# 
+# ipset list | head
+# iptables -nvL --line-numbers
+# 
+# 
+# 
+# 
+### iptables -I DOCKER-USER -i eth+ -m set ! --match-set ip_allow src -j DROP
+### service ipset save
+# 
+# ls -alrt /etc/sysconfig/ipset.d/
+# 
+# 
+# 
+#### no - save iptables first, then start service to it uses existing iptables (otherwise flushes everything)
+# iptables -F INPUT
+# iptables -F DOCKER-USER
+# iptables -F FILTERS
+# iptables-restore -n < iptables.j2
+# service iptables save
+# saved to: cat /etc/sysconfig/iptables
+# systemctl status iptables
+# systemctl start iptables
+# systemctl enable iptables
+# 
+# Note Problem with virtualbox, forwarded traffic to docker is dropped (ssh forwarded is ok)
+# 
+#Not this, fixed using iptables.j2 file...
+#This only affects docker stuff. I can still get to SSH port regardless..
+#Docker has so many wildcards everything matches unless you are very specific. Can't block all.
+#iptables -nvL --line-numbers
+#iptables -D INPUT 1
+#iptables -D DOCKER-USER 1
+#iptables -S DOCKER-USER
+#iptables -I INPUT -p tcp -m tcp --dport 2222 -m set ! --match-set ip_allow src -j REJECT --reject-with icmp-port-unreachable
+#iptables -I INPUT -p tcp -m tcp --dport 4444 -m set ! --match-set ip_allow src -j DROP
+###iptables -I INPUT -p tcp -m tcp --dport ! 22 -m set ! --match-set ip_allow src -j DROP
+#iptables -I DOCKER-USER -i eth+ -m set ! --match-set ip_allow src -j DROP
+# 

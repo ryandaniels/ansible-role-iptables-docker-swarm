@@ -1,0 +1,15 @@
+# Recreate the ipset if needed, and flush all entries
+create -exist ip_allow hash:ip family inet hashsize 1024 maxelem 65536
+#flush
+# Give access to specific ips
+#add ip_allow 192.168.2.0/24
+#add ip_allow 127.0.0.1/32
+#add ip_allow 172.17.0.1/16
+#add ip_allow 172.18.0.1/16
+# add ip_allow 192.168.100.0/24
+# add ip_allow 192.168.3.0/24
+# add ip_allow 192.168.4.0/24
+
+{% for ipaddress in iptables_docker_ip_allow_set -%}
+add ip_allow {{ ipaddress }}
+{% endfor %}

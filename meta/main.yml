@@ -1,0 +1,29 @@
+---
+galaxy_info:
+  role_name: iptables_docker_swarm
+  author: Ryan Daniels
+  description: Role to manage iptables configuration for Docker Swarm using simple variables. All changes made in "offline" mode to prevent blocking existing services.
+  license: MIT
+  min_ansible_version: 2.3
+  platforms:
+    - name: EL
+      versions:
+        - 7
+        - 8
+    - name: Fedora
+      versions:
+        - 30
+        - 31
+    - name: ArchLinux
+      versions:
+        - all
+  galaxy_tags:
+    - iptables
+    - docker
+    - system
+    - security
+    - networking
+    - tcp
+    - port
+
+dependencies: []

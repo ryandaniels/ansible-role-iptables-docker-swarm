@@ -1,0 +1,49 @@
+---
+debug_enabled_default: false
+proxy_env: []
+
+iptables_docker_managed: false
+iptables_docker_show_config: true
+iptables_docker_start: false
+iptables_docker_managed_pkg: true
+iptables_docker_packages:
+  - iptables
+  - iptables-services
+  - ipset
+  - ipset-service
+
+iptables_docker_ipset_config_dir: /etc/sysconfig/ipset.d
+
+# External IPs allowed to use Docker services / exposed ports
+# iptables_docker_ip_allow_set: []
+iptables_docker_ip_allow_set:
+  - 192.168.100.0/24
+  - 192.168.3.0/24
+  - 192.168.4.0/24
+
+# External network adapter to restrict
+# Eg. "eth+" is a wildcard for anything starting with eth
+iptables_docker_external_network_adapter: "eth+"
+
+# "Global" Ports to allow. Ports here will allow all traffic to them from iptables level.
+# Consider (also) binding a port to an internal IP for better security.
+# Eg. Docker: docker swarm init --advertise-addr 192.168.100.100 --listen-addr=192.168.100.100 --data-path-addr=192.168.100.100
+iptables_docker_global_ports_allow_tcp:
+  - 22                   # SSH
+
+iptables_docker_global_ports_allow_udp: []
+
+iptables_docker_swarm_network_adapter: "eth+"
+
+iptables_docker_swarm_ports_allow_tcp:
+  - 2376                 # Docker Swarm
+  - 2377                 # Docker Swarm
+  - 7946                 # Docker Swarm
+
+iptables_docker_swarm_ports_allow_udp:
+  - 4789                 # Docker Swarm
+  - 7946                 # Docker Swarm
+
+# Docker Swarm Internal IP range. Probably not needed.
+iptables_docker_swarm_ips:
+  - 172.18.0.0/16
