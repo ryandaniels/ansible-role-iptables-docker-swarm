@@ -10,8 +10,12 @@
 # :DOCKER-ISOLATION-STAGE-2 - [0:0]
 :DOCKER-USER - [0:0]
 :FILTERS - [0:0]
--F INPUT
--A INPUT -j FILTERS
+#-F INPUT
+#Can't flush input. wipes out docker encrypted overlay rules
+#Use ansible task instead to add -I INPUT -j FILTERS ?
+#-I INPUT -j FILTERS
+# -A INPUT -p udp -m policy --dir in --pol ipsec -m udp --dport 4789 -m u32 --u32 "0x0>>0x16&0x3c@0xc&0xffffff00=0x100600" -j ACCEPT
+# -A INPUT -p udp -m udp --dport 4789 -m u32 --u32 "0x0>>0x16&0x3c@0xc&0xffffff00=0x100600" -j DROP
 #-A INPUT -j RETURN
 # -A FORWARD -j DOCKER-USER
 # -A FORWARD -j DOCKER-INGRESS
@@ -47,6 +51,8 @@
 -A DOCKER-USER -i {{ iptables_docker_external_network_adapter }} -m set ! --match-set ip_allow src -j DROP
 -A DOCKER-USER -j RETURN
 -F FILTERS
+#Because Docker Swarm encrypted overlay network just appends rules to INPUT. Has to be at top unfortunately
+-A FILTERS -p udp -m policy --dir in --pol ipsec -m udp --dport 4789 -j RETURN
 -A FILTERS -m state --state RELATED,ESTABLISHED -j ACCEPT
 -A FILTERS -p icmp -j ACCEPT
 -A FILTERS -i lo -j ACCEPT

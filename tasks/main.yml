@@ -105,6 +105,14 @@
     - iptables_docker_managed|bool
     - stat_iptables_docker_copy_iptables.changed
 
+#iptables -I INPUT -j FILTERS
+- name: Insert jump to FILTERS rule in INPUT at line 1
+  iptables:
+    chain: INPUT
+    jump: FILTERS
+    action: insert
+    rule_num: "1"
+
 - name: iptables Docker | iptables save
   command: service iptables save warn=false # noqa 303
   when:
