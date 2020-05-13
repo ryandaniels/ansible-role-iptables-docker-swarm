@@ -52,7 +52,8 @@
 -A DOCKER-USER -j RETURN
 -F FILTERS
 #Because Docker Swarm encrypted overlay network just appends rules to INPUT. Has to be at top unfortunately
--A FILTERS -p udp -m policy --dir in --pol ipsec -m udp --dport 4789 -j RETURN
+#-A FILTERS -p udp -m policy --dir in --pol ipsec -m udp --dport 4789 -j RETURN
+-A FILTERS -p udp -m policy --dir in --pol ipsec -m udp -m set --match-set ip_allow src -m multiport --dports {% for ports in iptables_docker_swarm_ports_allow_udp|sort %}{{ ports }}{% if not loop.last %},{% endif %}{% endfor %} -j RETURN
 -A FILTERS -m state --state RELATED,ESTABLISHED -j ACCEPT
 -A FILTERS -p icmp -j ACCEPT
 -A FILTERS -i lo -j ACCEPT
