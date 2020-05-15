@@ -41,8 +41,8 @@ variables:
   rules:
       #Enable the "Merge pipelines will try to validate the post-merge result prior to merging" 
       #option at Settings > General > Merge requests in your project.
-    - if: $CI_MERGE_REQUEST_ID
-      when: never
+    # - if: $CI_MERGE_REQUEST_ID
+    #   when: never
     - changes:
       - "**/*.{md,rst,gitignore}"
       - "meta/*"
