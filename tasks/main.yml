@@ -174,7 +174,7 @@
 # 
 # 
 #### no - save iptables first, then start service to it uses existing iptables (otherwise flushes everything)
-# iptables -F INPUT
+## iptables -F INPUT
 # iptables -F DOCKER-USER
 # iptables -F FILTERS
 # iptables-restore -n < iptables.j2

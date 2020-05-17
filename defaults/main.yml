@@ -15,11 +15,12 @@ iptables_docker_packages:
 iptables_docker_ipset_config_dir: /etc/sysconfig/ipset.d
 
 # External IPs allowed to use Docker services / exposed ports
+# Also internal IPs used for Docker servers
 # iptables_docker_ip_allow_set: []
 iptables_docker_ip_allow_set:
   - 192.168.100.0/24
-  - 192.168.3.0/24
-  - 192.168.4.0/24
+  - 192.168.101.0/24
+  - 192.168.102.0/24
 
 # External network adapter to restrict
 # Eg. "eth+" is a wildcard for anything starting with eth
@@ -35,15 +36,18 @@ iptables_docker_global_ports_allow_udp: []
 
 iptables_docker_swarm_network_adapter: "eth+"
 
-iptables_docker_swarm_ports_allow_tcp:
-  - 2376                 # Docker Swarm
-  - 2377                 # Docker Swarm
-  - 7946                 # Docker Swarm
+iptables_docker_swarm_ports_allow_tcp: []
+#Not needed
+# iptables_docker_swarm_ports_allow_tcp:
+#   - 2376                 # Docker Swarm
+#   - 2377                 # Docker Swarm
+#   - 7946                 # Docker Swarm
 
+#Only 4789 is needed here, for Swarm Overlay (that's encrypted)
 iptables_docker_swarm_ports_allow_udp:
   - 4789                 # Docker Swarm
-  - 7946                 # Docker Swarm
+  # - 7946                 # Docker Swarm
 
-# Docker Swarm Internal IP range. Probably not needed.
+# Docker Swarm Internal IP range. Not needed.
 iptables_docker_swarm_ips:
   - 172.18.0.0/16
