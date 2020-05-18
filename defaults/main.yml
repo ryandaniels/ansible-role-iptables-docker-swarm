@@ -4,50 +4,80 @@ proxy_env: []
 
 iptables_docker_managed: false
 iptables_docker_show_config: true
-iptables_docker_start: false
+iptables_docker_check_problem_service_managed: true
+iptables_docker_check_problem_service:
+  - firewalld.service
+iptables_docker_start: true
 iptables_docker_managed_pkg: true
 iptables_docker_packages:
   - iptables
   - iptables-services
   - ipset
   - ipset-service
+iptables_docker_copy_ipset_force: false
+iptables_docker_copy_iptables_force: false
 
+iptables_docker_iptables_config_save: /etc/sysconfig/iptables
 iptables_docker_ipset_config_dir: /etc/sysconfig/ipset.d
 
-# External IPs allowed to use Docker services / exposed ports
-# Also internal IPs used for Docker servers
+#DONE: Check for firewalld (and ufw?) and freak out if running (or enabled?)
+#DONE: Problem with iptables saving Docker stuff in iptables rules? Edit iptables-service to not save Docker-* (besides DOCKER-USER)?
+#DONE: iptables_docker_ip_allow_set can't be empty. If it is, there's no point to this since nothing is blocked!
+#DONE: add check in network adapters for * and error
+#TODO: confirm "when" and "tags" are ok
+#TODO: works on Ubuntu? Ubuntu doesn't have iptables-services or ipset-service. has iptables-persistent and ipset-?
+#TODO: ipv6?? This is for ipv4 only
+#TODO: cleanup iptables.j2 to remove old junk that's commented out and useless
+#TODO: test UDP container
+#TODO: add Molecule test? Single node swarm mode?
+
+# IPs allowed to use Docker containers exposed ports
+# Also include IPs used for Docker servers
 # iptables_docker_ip_allow_set: []
 iptables_docker_ip_allow_set:
-  - 192.168.100.0/24
+  # - 192.168.100.0/24
+  # - 192.168.100.1
+  - 192.168.100.100
+  - 192.168.100.101
+  - 192.168.100.102
   - 192.168.101.0/24
   - 192.168.102.0/24
 
 # External network adapter to restrict
-# Eg. "eth+" is a wildcard for anything starting with eth
-iptables_docker_external_network_adapter: "eth+"
+# If you want to restrict only specific interface use exact name
+# If you want to restrict all interfaces of the same type, use "interface+" to match every interface, since + is the wildcard for iptables.
+# Eg. To restrict the ethX interfaces, use "eth+". "eth+" is a wildcard for anything starting with eth
+# DO NOT use "*". This is not a wildcard and matches nothing!
+# The less here the better. Safer to block all ('+') but if cannot, add network adapters with high traffic first.
+# local (lo) is not needed here.
+iptables_docker_external_network_adapter:
+  - "+" #Wildcard for everything
+  # - "eth+"
+  # - "enp0s+"
+  # - "wlp1s+"
+  # - "*" #Bad, does not work. * is not a wildcard for iptables!
 
-# "Global" Ports to allow. Ports here will allow all traffic to them from iptables level.
-# Consider (also) binding a port to an internal IP for better security.
-# Eg. Docker: docker swarm init --advertise-addr 192.168.100.100 --listen-addr=192.168.100.100 --data-path-addr=192.168.100.100
+# "Global" Ports to allow. Ports here will allow all tcp traffic to these ports from iptables level.
+# Only for ports on OS, not for Docker containers.
 iptables_docker_global_ports_allow_tcp:
   - 22                   # SSH
 
+# "Global" Ports to allow. Ports here will allow all udp traffic to these ports from iptables level.
+# Only for ports on OS, not for Docker containers.
 iptables_docker_global_ports_allow_udp: []
 
-iptables_docker_swarm_network_adapter: "eth+"
+iptables_docker_swarm_network_adapter: "{{ iptables_docker_external_network_adapter }}"
+# iptables_docker_swarm_network_adapter:
+#   - "+" #Wildcard for everything
+#   # - "eth+"
 
-iptables_docker_swarm_ports_allow_tcp: []
-#Not needed
-# iptables_docker_swarm_ports_allow_tcp:
-#   - 2376                 # Docker Swarm
-#   - 2377                 # Docker Swarm
-#   - 7946                 # Docker Swarm
+# Docker Swarm ports aren't needed here. Only add container tcp ports you want open to everyone.
+# If using non-Swarm, consider (also) binding a port to an internal IP for better security.
+# If using Swarm, consider using specific IPs for Docker communication
+# Eg. Docker: docker swarm init --advertise-addr 192.168.100.100 --listen-addr=192.168.100.100 --data-path-addr=192.168.100.100
+# iptables_docker_swarm_ports_allow_tcp: []
+iptables_docker_swarm_ports_allow_tcp:
+  - 9000
 
-#Only 4789 is needed here, for Swarm Overlay (that's encrypted)
-iptables_docker_swarm_ports_allow_udp:
-  - 4789                 # Docker Swarm
-  # - 7946                 # Docker Swarm
-
-# Docker Swarm Internal IP range. Not needed.
-iptables_docker_swarm_ips:
-  - 172.18.0.0/16
+# Docker Swarm ports aren't needed here. Only add container udp ports you want open to everyone.
+iptables_docker_swarm_ports_allow_udp: []
