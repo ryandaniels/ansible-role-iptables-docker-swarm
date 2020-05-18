@@ -6,20 +6,16 @@ This role exists because firewalld and Docker (and Docker Swarm) do not get alon
 Works with Docker (and Docker Swarm).  
 Also works with Docker Swarms undocumented use of encrypted overlay networks.  
 
-This was suppose to be a simple task. Secure Docker with a firewall. But unfortuanately it is not. I've tried to keep this as simple as possible.  
+This was suppose to be a simple. Secure Docker with a firewall. But unfortuanately it is not. I've tried to keep this as simple as possible.  
 
 Features
 
 * Secure by default. Once installed only Docker IPs can access all containers, and other OS processes that have open ports on the server(s).  
 * You don't need to be an expert with iptables to use this.  
-* Add IPs that are allowed to communicate with Docker containers, and the other OS processes that have open ports.  
-* Open specific Docker container port, or server process' port to everyone.  
-* Interfaces can also be specified. By default all interfaces are filtered (Secure by default). You can also filter specific network interface(s) and allow all other interfaces.  
-* Everything done in "offline" mode. So there should be no issues with Docker when iptables starts.
-
-Make sure you test in non-production first, I cannot make any guarantees.  
-Be careful, this will remove and add iptables rules on the OS. Use with caution.  
-Existing iptables rules could be removed! Confirm what you have setup before running this.  
+* Add "trusted" IPs that are allowed to communicate with Docker containers, and the other OS processes that have open ports.  
+* Open specific Docker container port, or server process port to public (everyone).  
+* Interfaces can also be specified. By default all interfaces are filtered (Secure by default). You could filter specific network interface(s) and allow all other interfaces.  
+* Everything done in "offline" mode. So there should be no issues with Docker when iptables rules are activated.
 
 This is using iptables as the firewall, and ipset to allow iptables to have a list of IPs that are allowed.  
 
@@ -42,6 +38,11 @@ For more information about firewalld and Docker:
 <https://success.docker.com/article/why-am-i-having-network-problems-after-firewalld-is-restarted>  
 <https://www.tripwire.com/state-of-security/devops/psa-beware-exposing-ports-docker/>  
 <https://docs.docker.com/network/iptables/>  
+
+**WARNINGS**:  
+Make sure you test in non-production first, I cannot make any guarantees.  
+Be careful, this will remove and add iptables rules on the OS. Use with caution.  
+Existing iptables rules could be removed! Confirm what you have setup before running this.  
 
 ## Docker versions tested
 
@@ -343,10 +344,17 @@ Misc useful commands:
 
 ```bash
 cat /etc/sysconfig/ipset.d/ip_allow.set
-
+systemctl restart ipset
 ipset list | head
 
+iptables -F DOCKER-USER
+iptables -F FILTERS
+iptables-restore -n < ansible_iptables_docker-iptables
 
+grep -v "^#" ansible_iptables_docker-iptables
+iptables -S INPUT
+iptables -S DOCKER-USER
+iptables -S FILTERS
 ```
 
 ## TODO
@@ -358,12 +366,11 @@ ipset list | head
 * [x] add automatic list of docker IPs in allowed list (uses IPs from inventory group docker_hosts)
 * [x] Change auto Docker server trusted IPs so can override
 * [x] confirm "when" and "tags" are ok
-* [ ] works on Ubuntu? Ubuntu doesn't have iptables-services or ipset-service. has iptables-persistent and ipset-?
+* [ ] Ubuntu? Ubuntu doesn't have iptables-services or ipset-service. has iptables-persistent and ipset-?
 * [ ] ipv6?? This is for ipv4 only
 * [ ] cleanup iptables.j2 to remove old junk that's commented out and useless
-* [ ] test UDP container
-* [ ] add Molecule test? Single node swarm mode only?
-* [ ] Publish to Galaxy and add notifications back in .travis.yml
+* [x] test UDP container and OS port
+* [ ] add test? Molecule? Single node swarm mode only? how to test connection doesn't work from "untrusted" ip?
 
 ## Author
 
