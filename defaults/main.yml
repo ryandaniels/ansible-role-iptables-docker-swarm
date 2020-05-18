@@ -30,6 +30,7 @@ iptables_docker_ipset_config_dir: /etc/sysconfig/ipset.d
 #TODO: cleanup iptables.j2 to remove old junk that's commented out and useless
 #TODO: test UDP container
 #TODO: add Molecule test? Single node swarm mode?
+#TODO: Publish to Galaxy and add notifications back in .travis.yml
 
 # IPs allowed to use Docker containers exposed ports
 # Also include IPs used for Docker servers
