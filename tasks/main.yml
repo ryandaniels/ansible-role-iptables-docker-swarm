@@ -1,9 +1,19 @@
 ---
+
+- name: iptables Docker | Set Docker server IPs for allow list
+  set_fact:
+    iptables_docker_server_ip_allow_set: "{{ iptables_docker_server_ip_allow_set | default(groups['docker_hosts'] | map('extract', hostvars, ['ansible_host']) | list) }}"
+    cacheable: yes
+  when:
+    - iptables_docker_managed|bool
+
 - block:
-  - name: iptables Docker | Show groups['docker_hosts']
-    debug: var=groups['docker_hosts']
-  - name: iptables Docker | Show IPs in docker_hosts group
-    debug: msg="{{ groups['docker_hosts'] | map('extract', hostvars, ['ansible_host']) | list }}"
+  - name: iptables Docker | Show iptables_docker_server_ip_allow_set for Docker server allow list
+    debug: var=iptables_docker_server_ip_allow_set
+  # - name: iptables Docker | Show groups['docker_hosts']
+  #   debug: var=groups['docker_hosts']
+  # - name: iptables Docker | Show IPs in docker_hosts group
+  #   debug: msg="{{ groups['docker_hosts'] | map('extract', hostvars, ['ansible_host']) | list }}"
   - name: iptables Docker | Show iptables_docker_ip_allow_set
     debug: var=iptables_docker_ip_allow_set
   - name: iptables Docker | Show iptables_docker_global_ports_allow_tcp
@@ -14,12 +24,6 @@
     debug: var=iptables_docker_swarm_ports_allow_tcp
   - name: iptables Docker | Show iptables_docker_swarm_ports_allow_udp
     debug: var=iptables_docker_swarm_ports_allow_udp
-  - name: iptables Docker | iptables output (-nvL)
-    command: iptables -nvL --line-numbers
-    changed_when: false
-  # - name: pause
-  #   pause:
-  #     seconds: 10
   # - name: iptables Docker | iptables output (-nvL)
   #   command: iptables -nvL --line-numbers
   #   changed_when: false
@@ -46,13 +50,22 @@
 #   tags:
 #     - iptables_docker
 
-- name: iptables Docker | fail if host not in group 'docker_hosts'
-  fail: msg="host is not in group 'docker_hosts'"
+- name: iptables Docker | fail if iptables_docker_server_ip_allow_set not defined
+  fail: msg="iptables_docker_server_ip_allow_set is not defined"
   when:
     - iptables_docker_managed|bool
-    - "'docker_hosts' not in group_names"
+    - not iptables_docker_server_ip_allow_set
   tags:
     - iptables_docker
+
+#Not needed since can be overwritten with iptables_docker_server_ip_allow_set
+# - name: iptables Docker | fail if host not in group 'docker_hosts'
+#   fail: msg="host is not in group 'docker_hosts'"
+#   when:
+#     - iptables_docker_managed|bool
+#     - "'docker_hosts' not in group_names"
+#   tags:
+#     - iptables_docker
 
 - name: iptables Docker | fail if iptables_docker_external_network_adapter has '*'
   fail: msg="iptables_docker_external_network_adapter cannot have '*'"

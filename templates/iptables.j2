@@ -52,8 +52,8 @@
 # -A FILTERS -m set ! --match-set ip_allow src -j DROP
 #Can't have 2 lines with ! .. never match 2nd!
 # -A FILTERS ! -i docker_gwbridge -m set ! --match-set ip_allow src -j DROP
--A FILTERS -m set ! --match-set ip_allow src -j DROP
 # -A FILTERS ! -i docker0 -m set ! --match-set ip_allow src -j DROP
+-A FILTERS -m set ! --match-set ip_allow src -j DROP
 {% else %}
 {% for adapter in iptables_docker_external_network_adapter -%}
 -A FILTERS -i {{ adapter }} -m set ! --match-set ip_allow src -j DROP
