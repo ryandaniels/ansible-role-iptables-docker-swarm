@@ -24,6 +24,7 @@ iptables_docker_ipset_config_dir: /etc/sysconfig/ipset.d
 #DONE: Problem with iptables saving Docker stuff in iptables rules? Edit iptables-service to not save Docker-* (besides DOCKER-USER)?
 #DONE: iptables_docker_ip_allow_set can't be empty. If it is, there's no point to this since nothing is blocked!
 #DONE: add check in network adapters for * and error
+#DONE: add automatic list of docker IPs in allowed list (uses IPs from inventory group docker_hosts)
 #TODO: confirm "when" and "tags" are ok
 #TODO: works on Ubuntu? Ubuntu doesn't have iptables-services or ipset-service. has iptables-persistent and ipset-?
 #TODO: ipv6?? This is for ipv4 only
@@ -32,19 +33,18 @@ iptables_docker_ipset_config_dir: /etc/sysconfig/ipset.d
 #TODO: add Molecule test? Single node swarm mode?
 #TODO: Publish to Galaxy and add notifications back in .travis.yml
 
-# IPs allowed to use Docker containers exposed ports
-# Also include IPs used for Docker servers
+# IPs allowed to use Docker containers exposed ports and server's other processes' exposed ports
 # iptables_docker_ip_allow_set: []
 iptables_docker_ip_allow_set:
   # - 192.168.100.0/24
   # - 192.168.100.1
-  - 192.168.100.100
-  - 192.168.100.101
-  - 192.168.100.102
+  # - 192.168.100.100
+  # - 192.168.100.101
+  # - 192.168.100.102
   - 192.168.101.0/24
   - 192.168.102.0/24
 
-# External network adapter to restrict
+# External network adapter to restrict. Only listed adapters will be blocked. Others will be allowed through. Defaults to block all (with '+').
 # If you want to restrict only specific interface use exact name
 # If you want to restrict all interfaces of the same type, use "interface+" to match every interface, since + is the wildcard for iptables.
 # Eg. To restrict the ethX interfaces, use "eth+". "eth+" is a wildcard for anything starting with eth

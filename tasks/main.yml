@@ -1,7 +1,9 @@
 ---
 - block:
-  # - name: debug groups
-  #   debug: var=groups
+  - name: iptables Docker | Show groups['docker_hosts']
+    debug: var=groups['docker_hosts']
+  - name: iptables Docker | Show IPs in docker_hosts group
+    debug: msg="{{ groups['docker_hosts'] | map('extract', hostvars, ['ansible_host']) | list }}"
   - name: iptables Docker | Show iptables_docker_ip_allow_set
     debug: var=iptables_docker_ip_allow_set
   - name: iptables Docker | Show iptables_docker_global_ports_allow_tcp
@@ -18,6 +20,15 @@
   # - name: pause
   #   pause:
   #     seconds: 10
+  # - name: iptables Docker | iptables output (-nvL)
+  #   command: iptables -nvL --line-numbers
+  #   changed_when: false
+  #   register: stat_iptables_results
+  # - name: iptables Docker | iptables output (-nvL) results
+  #   debug: var=stat_iptables_results.stdout_lines
+  - name: pause
+    pause:
+      seconds: 10
   when:
     - iptables_docker_managed|bool
     # - debug_enabled_default|bool
@@ -26,11 +37,20 @@
     - iptables_docker
     - iptables_docker_show_config
 
-- name: iptables Docker | fail if iptables_docker_ip_allow_set not defined
-  fail: msg="iptables_docker_ip_allow_set is not defined"
+#Not needed since this is now user IPs only
+# - name: iptables Docker | fail if iptables_docker_ip_allow_set not defined
+#   fail: msg="iptables_docker_ip_allow_set is not defined"
+#   when:
+#     - iptables_docker_managed|bool
+#     - not iptables_docker_ip_allow_set
+#   tags:
+#     - iptables_docker
+
+- name: iptables Docker | fail if host not in group 'docker_hosts'
+  fail: msg="host is not in group 'docker_hosts'"
   when:
     - iptables_docker_managed|bool
-    - not iptables_docker_ip_allow_set
+    - "'docker_hosts' not in group_names"
   tags:
     - iptables_docker
 

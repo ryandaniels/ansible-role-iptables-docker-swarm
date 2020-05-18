@@ -6,6 +6,10 @@ create -exist ip_allow hash:ip family inet hashsize 1024 maxelem 65536
 # add ip_allow 192.168.101.0/24
 # add ip_allow 192.168.102.0/24
 
+{% for server in groups['docker_hosts'] %}
+add ip_allow {{ hostvars[server].ansible_host }}
+{% endfor %}
+
 {% for ipaddress in iptables_docker_ip_allow_set -%}
 add ip_allow {{ ipaddress }}
 {% endfor %}
