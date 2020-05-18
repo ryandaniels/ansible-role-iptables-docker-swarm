@@ -177,7 +177,7 @@
     src: templates/iptables.j2
     # dest: "{{ iptables_docker_iptables_config_dir }}/iptables"
     dest: "~/ansible_iptables_docker-iptables"
-    validate: iptables-restore -t < %s
+    # validate: iptables-restore -t < %s
   # environment:
   #   PATH: "/usr/sbin:/usr/local/sbin:/sbin"
   register: stat_iptables_docker_copy_iptables
@@ -185,6 +185,18 @@
   #   - reload tables
   when:
     - iptables_docker_managed|bool
+  tags:
+    - iptables_docker
+    - iptables_config
+    - iptables_config_iptables
+
+#Ansible validate in template doesn't like "shell features" like pipes and <
+- name: iptables Docker | Validate iptables config
+  shell: iptables-restore -t < ~/ansible_iptables_docker-iptables
+  changed_when: false
+  when:
+    - iptables_docker_managed|bool
+    - stat_iptables_docker_copy_iptables.changed or iptables_docker_copy_iptables_force|bool
   tags:
     - iptables_docker
     - iptables_config
