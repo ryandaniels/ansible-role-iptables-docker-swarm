@@ -1,11 +1,15 @@
 ---
-
 - name: iptables Docker | Set Docker server IPs for allow list
   set_fact:
     iptables_docker_server_ip_allow_set: "{{ iptables_docker_server_ip_allow_set | default(groups['docker_hosts'] | map('extract', hostvars, ['ansible_host']) | list) }}"
     cacheable: yes
   when:
     - iptables_docker_managed|bool
+  tags:
+    - iptables_docker
+    - iptables_docker_show_config
+    - iptables_config
+    - iptables_config_ipset
 
 - block:
   - name: iptables Docker | Show iptables_docker_server_ip_allow_set for Docker server allow list
@@ -40,6 +44,9 @@
   tags:
     - iptables_docker
     - iptables_docker_show_config
+    - iptables_config
+    - iptables_config_ipset
+    - iptables_config_iptables
 
 #Not needed since this is now user IPs only
 # - name: iptables Docker | fail if iptables_docker_ip_allow_set not defined
@@ -285,73 +292,3 @@
     - iptables_docker
     - iptables_config
     - iptables_config_iptables
-
-# docker iptables - testing on home centos7 swarmwork-02
-# 
-# iptables -nvL --line-numbers
-# 
-# yum install iptables iptables-services ipset ipset-service
-# 
-# vi iptables_ipset-allow.conf
-# # Recreate the ipset if needed, and flush all entries
-# create -exist ip_allow hash:ip family inet hashsize 1024 maxelem 65536
-# flush
-# # Give access to specific ips
-# #add ip_allow 192.168.2.0/24
-# add ip_allow 192.168.100.0/24
-# 
-# ipset restore < iptables_ipset-allow.conf
-# ipset list | head
-# 
-#Or instead of the .conf above, add it here:
-# mkdir -p /etc/sysconfig/ipset.d
-# vi /etc/sysconfig/ipset.d/ip_allow.set
-# # Recreate the ipset if needed, and flush all entries
-# create -exist ip_allow hash:ip family inet hashsize 1024 maxelem 65536
-# #flush
-# # Give access to specific ips
-# #add ip_allow 192.168.2.0/24
-# add ip_allow 192.168.100.0/24
-# 
-# systemctl status ipset
-# systemctl start ipset
-# systemctl enable ipset
-# 
-# ipset list | head
-# iptables -nvL --line-numbers
-# 
-# 
-# 
-# 
-### iptables -I DOCKER-USER -i eth+ -m set ! --match-set ip_allow src -j DROP
-### service ipset save
-# 
-# ls -alrt /etc/sysconfig/ipset.d/
-# 
-# 
-# 
-#### no - save iptables first, then start service to it uses existing iptables (otherwise flushes everything)
-## iptables -F INPUT
-# iptables -F DOCKER-USER
-# iptables -F FILTERS
-# iptables-restore -n < iptables.j2
-# service iptables save
-# saved to: cat /etc/sysconfig/iptables
-# systemctl status iptables
-# systemctl start iptables
-# systemctl enable iptables
-# 
-# Note Problem with virtualbox, forwarded traffic to docker is dropped (ssh forwarded is ok)
-# 
-#Not this, fixed using iptables.j2 file...
-#This only affects docker stuff. I can still get to SSH port regardless..
-#Docker has so many wildcards everything matches unless you are very specific. Can't block all.
-#iptables -nvL --line-numbers
-#iptables -D INPUT 1
-#iptables -D DOCKER-USER 1
-#iptables -S DOCKER-USER
-#iptables -I INPUT -p tcp -m tcp --dport 2222 -m set ! --match-set ip_allow src -j REJECT --reject-with icmp-port-unreachable
-#iptables -I INPUT -p tcp -m tcp --dport 4444 -m set ! --match-set ip_allow src -j DROP
-###iptables -I INPUT -p tcp -m tcp --dport ! 22 -m set ! --match-set ip_allow src -j DROP
-#iptables -I DOCKER-USER -i eth+ -m set ! --match-set ip_allow src -j DROP
-# 

@@ -26,9 +26,9 @@ iptables_docker_ipset_config_dir: /etc/sysconfig/ipset.d
 #DONE: add check in network adapters for * and error
 #DONE: add automatic list of docker IPs in allowed list (uses IPs from inventory group docker_hosts)
 #DONE: Change auto Docker server trusted IPs so can override
-#TODO: confirm "when" and "tags" are ok
+#DONE: confirm "when" and "tags" are ok
 #TODO: works on Ubuntu? Ubuntu doesn't have iptables-services or ipset-service. has iptables-persistent and ipset-?
-#TODO: ipv6?? This is for ipv4 only
+#TODO: ipv6?? This is for ipv4 only. Add note to readme to disable ipv6 to be safe.
 #TODO: cleanup iptables.j2 to remove old junk that's commented out and useless
 #TODO: test UDP container
 #TODO: add Molecule test? Single node swarm mode?
