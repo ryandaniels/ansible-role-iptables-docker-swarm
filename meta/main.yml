@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  role_name: iptables_docker_swarm
+  role_name: iptables_docker
   author: Ryan Daniels
   description: Manage iptables configuration for Docker (including Swarm). All changes made to prevent blocking existing services.
   license: MIT
@@ -12,7 +12,7 @@ galaxy_info:
   galaxy_tags:
     - iptables
     - docker
-    - dockerswarm
+    - swarm
     - system
     - security
     - networking
