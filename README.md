@@ -1,4 +1,4 @@
-# ansible-role-iptables_docker
+# Ansible Role: iptables for Docker (and Docker Swarm)
 
 Add firewall rules to server via iptables, for Docker, and Docker Swarm. This will actually protect your Docker containers!  
 This Ansible Role exists because firewalld and Docker (and Docker Swarm) do not get along.  
