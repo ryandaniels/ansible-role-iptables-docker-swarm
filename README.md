@@ -3,9 +3,13 @@
 Add firewall rules to server via iptables, for Docker, and Docker Swarm. This will actually protect your Docker containers!  
 This Ansible Role exists because firewalld and Docker (and Docker Swarm) do not get along.  
 
-Main problem being solved: When starting a container in Docker with a "published" port, you have no control and the port is exposed through your firewall. Even if you were using iptables, or another firewall on your server. Docker opens that "published" port to everyone, and bypasses your firewall.  
+Problem being solved: When starting a container in Docker with a "published" port, you have no control and the port is exposed through your server's firewall. Even if you were using iptables, or another firewall on your server. Docker opens that "published" port to everyone, and bypasses your firewall.  
+
+Use case for this solution: Allow trusted IPs to connect to Docker containers (and Docker Swarm containers), along with other open OS ports. With an option to expose specified ports publicly (Docker/Docker Swarm and OS). The trusted IPs are not in the same network IP range, or even network subnet.  
 
 This was suppose to be simple. Secure Docker with a firewall. But unfortuanately it is not. I've tried to keep this as simple as possible.  
+
+There could be unknown problems with this.. use at your own risk!  
 
 Currently tested and working on CentOS/RHEL 7.  
 
@@ -13,31 +17,33 @@ Currently tested and working on CentOS/RHEL 7.
 
 * Works with Docker, and Docker Swarm.
 * Secure by default. Once configured, only Docker IPs can access all containers, and all other OS processes that have open ports on the server.  
-* Simple as possible. The less iptables rules, the faster performance will be.  
-* Automatic. No manually adding ports to the firewall (if you use a trusted set of IPs)
+* Simple as possible. The less iptables rules, the faster performance will be (in theory at least).  
+* Automatic. No manually adding ports to the firewall config (if you use a trusted set of IPs)
 * Add "trusted" IPs that are allowed to communicate with all Docker containers, and all other OS processes that have open ports on the server.  
-* Open specific Docker container ports, or the server's OS ports to the public (everyone).  
-* Interfaces can also be specified. By default all interfaces are filtered (Secure by default). You could filter specific network interface(s) and allow all other interfaces (only specify an untrusted interface).  
+* Open specified Docker container ports, or the server's OS ports to the public (everyone) through the firewall, like SSH.  
+* Interfaces can also be specified. By default all interfaces are filtered. You could filter specific network interface(s) and allow all other interfaces (only specify an untrusted interface).  
 * Everything done in "offline" mode. So there should be no issues with Docker when iptables rules are activated.
 * You don't need to be an expert with iptables to use this.  
-* Works with Docker Swarm's undocumented use of encrypted overlay networks.
+* Works with Docker Swarm's undocumented use of iptables and encrypted overlay networks. (iptables rules are appened to the INPUT chain).
 
-This solution is using iptables as the firewall, and ipset to allow iptables to have a list of IPs that are allowed.  
+This solution is using `iptables` as the firewall, and `ipset` to allow iptables to have a list of IPs that are allowed.  
 
 iptables chains used, and how:  
-INPUT, not flushed. Rule inserted at top to jump to custom chain for OS related rules.  
-DOCKER-USER, flushed. All Docker (and Docker Swarm) related rules are here to block containers from being exposed to everyone by default. By default only the Docker server IPs are allowed.  
-FILTERS, flushed. Custom chain for server's processes (that aren't Docker). By default only the Docker server IPs are allowed.  
+**INPUT**, not flushed. Rule inserted at top to jump to custom chain for OS related rules.  
+**DOCKER-USER**, flushed. All Docker (and Docker Swarm) related rules are here to block containers from being exposed to everyone by default. By default only the Docker server IPs are allowed.  
+**FILTERS**, flushed. Custom chain for server's processes (that aren't Docker). By default only the Docker server IPs are allowed.  
 
 iptables manual: <http://ipset.netfilter.org/iptables.man.html>  
 
 ## Warnings
 
+Don't lock yourself out of your server. This is modifying your firewall. Always have another way to get in, like a "console".  
+
 **Note about IPs**: This is for IPv4 only. IPv6 has not been tested. It is safer if you disable IPv6 on your servers.  
 
 **Other security consideration**:  
 If using non-Swarm (normal Docker), consider also binding a port to an internal IP for better security.
-If using Swarm, consider using specific IPs for Docker Swarm communication
+If using Swarm, consider using specific IPs for Docker Swarm communication.  
 Eg. `docker swarm init --advertise-addr 192.168.100.100 --listen-addr=192.168.100.100 --data-path-addr=192.168.100.100`
 
 **Important Note**: Docker and firewalld do not get along. This Ansible Role has a check enabled to fail this role if the firewalld service is running or enabled.  
@@ -46,10 +52,12 @@ For more information about firewalld and Docker:
 <https://www.tripwire.com/state-of-security/devops/psa-beware-exposing-ports-docker/>  
 <https://docs.docker.com/network/iptables/>  
 
-**WARNINGS**:  
-Make sure you test in non-production first, I cannot make any guarantees.  
+**WARNING**:  
+Make sure you test in non-production first, I cannot make any guarantees or held responsible.  
 Be careful, this will remove and add iptables rules on the OS. Use with caution.  
 Existing iptables rules could be removed! Confirm what you have setup before running this.  
+
+There could be unknown problems with this.. use at your own risk!  
 
 ## Docker versions tested
 
@@ -155,7 +163,7 @@ iptables_docker_ipset_config_dir: /etc/sysconfig/ipset.d
 
 ## User Settings
 
-* Zone Config
+* Override Docker server IPs (Optional)
 
 ```txt
 Optionally specify the Docker server IPs. If not set, IPs will be determined from docker_hosts group in Ansible inventory.
@@ -268,7 +276,7 @@ IPs will be added to the trusted list:
 
 All network interfaces will be restricted since using wildcard '+' for iptables_docker_external_network_adapter.  
 
-Port 22 will be open publically.
+Port 22 will be open publicly.
 
 ```yaml
 ---

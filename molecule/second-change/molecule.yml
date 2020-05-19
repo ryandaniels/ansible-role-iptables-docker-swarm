@@ -1,0 +1,41 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+# lint: |
+#   set -e
+#   yamllint .
+#   ansible-lint
+# lint: ansible-lint
+# platforms:
+#   - name: instance
+#     image: docker.io/pycontribs/centos:7
+#     pre_build_image: true
+platforms:
+  - name: instance
+    privileged: true
+    # image: centos:7
+    image: ${MOLECULE_DISTRO:-centos:7}
+    command: ${MOLECULE_DOCKER_COMMAND:-"/sbin/init"}
+    # command: /sbin/init
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+provisioner:
+  name: ansible
+  # playbooks:
+  #   converge: ${MOLECULE_PLAYBOOK:-converge.yml}
+verifier:
+  name: ansible
+  # directory: ../tests/
+scenario:
+  test_sequence:
+    # - create
+    # - prepare
+    - converge
+    - verify
+    - cleanup
+    - destroy
