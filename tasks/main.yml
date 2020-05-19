@@ -1,7 +1,7 @@
 ---
 - name: iptables Docker | Set Docker server IPs for allow list
   set_fact:
-    iptables_docker_server_ip_allow_set: "{{ iptables_docker_server_ip_allow_set | default(groups['docker_hosts'] | map('extract', hostvars, ['ansible_host']) | list) }}"
+    iptables_docker_server_ip_allow_set: "{{ iptables_docker_server_ip_allow_set | default(groups['docker_hosts'] | map('extract', hostvars, ['ansible_host']) | list) }}" # noqa 204
     cacheable: yes
   when:
     - iptables_docker_managed|bool
