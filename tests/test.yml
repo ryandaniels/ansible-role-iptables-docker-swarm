@@ -2,4 +2,4 @@
 - hosts: localhost
   remote_user: root
   roles:
-    - ryandaniels.iptables_docker_swarm
+    - ryandaniels.iptables_docker

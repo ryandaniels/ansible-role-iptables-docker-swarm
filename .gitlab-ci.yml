@@ -19,7 +19,7 @@ variables:
   tags:
     - docker
   before_script:
-    - export ROLE_NAME=iptables_docker_swarm
+    - export ROLE_NAME=iptables_docker
     # - apk update && apk add --no-cache py3-pip
     - python3 -m pip install ansible-lint==4.2.0
     - docker -v
