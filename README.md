@@ -266,6 +266,20 @@ Add container udp ports you want open to everyone.
 iptables_docker_swarm_ports_allow_udp: []
 ```
 
+* Docker bridge network name (docker0), and IP range (for DOCKER-USER iptables source allow)
+
+```yaml
+iptables_docker_bridge_name: docker0
+iptables_docker_bridge_ips: 172.17.0.0/16
+```
+
+* Docker Swarm bridge network IP range (docker_gwbridge) (for DOCKER-USER iptables source allow)
+
+```yaml
+iptables_docker_swarm_bridge_name: docker_gwbridge
+iptables_docker_swarm_bridge_ips: 172.18.0.0/16
+```
+
 ## Example config file (inventories/dev-env/group_vars/all.yml)
 
 From the example below:  

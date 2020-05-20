@@ -71,3 +71,12 @@ iptables_docker_swarm_ports_allow_tcp:
 
 # Docker Swarm ports aren't needed here. Only add container udp ports you want open to everyone.
 iptables_docker_swarm_ports_allow_udp: []
+
+# You probably don't need to change anything below this line
+# Docker bridge network name (docker0), and IP range (for DOCKER-USER iptables source allow)
+iptables_docker_bridge_name: docker0
+iptables_docker_bridge_ips: 172.17.0.0/16
+
+# Docker Swarm bridge network IP range (docker_gwbridge) (for DOCKER-USER iptables source allow)
+iptables_docker_swarm_bridge_name: docker_gwbridge
+iptables_docker_swarm_bridge_ips: 172.18.0.0/16

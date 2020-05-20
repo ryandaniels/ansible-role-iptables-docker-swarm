@@ -11,9 +11,13 @@
 # -A INPUT -p udp -m udp --dport 4789 -m u32 --u32 "0x0>>0x16&0x3c@0xc&0xffffff00=0x100600" -j DROP
 #-A INPUT -j RETURN
 -F DOCKER-USER
+#Needed to allow outbound traffic from containers
+-A DOCKER-USER -m state --state RELATED,ESTABLISHED -j RETURN
 #If wildcard used to block all network interfaces, this is needed to allow docker traffic.
--A DOCKER-USER -i docker_gwbridge -j RETURN
--A DOCKER-USER -i docker0 -j RETURN
+-A DOCKER-USER -i {{ iptables_docker_swarm_bridge_name }} -j RETURN
+-A DOCKER-USER -s {{ iptables_docker_swarm_bridge_ips }} -j RETURN
+-A DOCKER-USER -i {{ iptables_docker_bridge_name }} -j RETURN
+-A DOCKER-USER -s {{ iptables_docker_bridge_ips }} -j RETURN
 {% if iptables_docker_swarm_ports_allow_tcp is defined and iptables_docker_swarm_ports_allow_tcp %}
 -A DOCKER-USER -p tcp -m tcp -m multiport --dports {% for ports in iptables_docker_swarm_ports_allow_tcp|sort %}{{ ports }}{% if not loop.last %},{% endif %}{% endfor %} -j RETURN
 #TODO needed? No traffic to the rule
@@ -25,8 +29,8 @@
 {% if iptables_docker_swarm_network_adapter is defined and "+" in iptables_docker_swarm_network_adapter %}
 # -A DOCKER-USER -m set ! --match-set ip_allow src -j DROP
 #Can't have 2 lines with ! .. never match 2nd! Have to have seperate chains?? Also, don't need since at top is a return for docker interfaces
-# -A DOCKER-USER ! -i docker_gwbridge -m set ! --match-set ip_allow src -j DROP
-# -A DOCKER-USER ! -i docker0 -m set ! --match-set ip_allow src -j DROP
+# -A DOCKER-USER ! -i {{ iptables_docker_swarm_bridge_name }} -m set ! --match-set ip_allow src -j DROP
+# -A DOCKER-USER ! -i {{ iptables_docker_bridge_name }} -m set ! --match-set ip_allow src -j DROP
 -A DOCKER-USER -m set ! --match-set ip_allow src -j DROP
 {% else %}
 {% for adapter in iptables_docker_swarm_network_adapter -%}
@@ -51,8 +55,8 @@
 {% if iptables_docker_external_network_adapter is defined and "+" in iptables_docker_external_network_adapter %}
 # -A FILTERS -m set ! --match-set ip_allow src -j DROP
 #Can't have 2 lines with ! .. never match 2nd!
-# -A FILTERS ! -i docker_gwbridge -m set ! --match-set ip_allow src -j DROP
-# -A FILTERS ! -i docker0 -m set ! --match-set ip_allow src -j DROP
+# -A FILTERS ! -i {{ iptables_docker_swarm_bridge_name }} -m set ! --match-set ip_allow src -j DROP
+# -A FILTERS ! -i {{ iptables_docker_bridge_name }} -m set ! --match-set ip_allow src -j DROP
 -A FILTERS -m set ! --match-set ip_allow src -j DROP
 {% else %}
 {% for adapter in iptables_docker_external_network_adapter -%}
