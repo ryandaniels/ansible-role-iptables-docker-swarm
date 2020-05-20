@@ -164,9 +164,7 @@ iptables_docker_ipset_config_dir: /etc/sysconfig/ipset.d
 
 * ipset maximum elements (IPs in the allow list)
 
-```txt
-If changed after first creation, must be deleted and re-created manually. 64k IPs should be enough.
-```
+    If changed after first creation, must be deleted and re-created manually. 64k IPs should be enough.
 
 ```yaml
 iptables_docker_ipset_maxelem: 65536
@@ -176,9 +174,7 @@ iptables_docker_ipset_maxelem: 65536
 
 * Override Docker server IPs (Optional)
 
-```txt
-Optionally specify the Docker server IPs. If not set, IPs will be determined from docker_hosts group in Ansible inventory.
-```
+    Optionally specify the Docker server IPs. If not set, IPs will be determined from docker_hosts group in Ansible inventory.
 
 ```yaml
 # iptables_docker_server_ip_allow_set:
@@ -199,15 +195,13 @@ iptables_docker_ip_allow_set:
 
 * Network adapter to restrict for OS rules
 
-```txt
-Only listed adapters will be blocked. Others will be allowed through. Defaults to block all (with '+').  
-If you want to restrict only specific network interface use exact name.  
-If you want to restrict all interfaces of the same type, use "interface+" to match every interface, since + is the wildcard for iptables.  
-Eg. To restrict the ethX interfaces, use "eth+". "eth+" is a wildcard for anything starting with eth.  
-DO NOT use "*". This is not a wildcard and matches nothing!  
-The less here the better. Safer to block all ('+') but if cannot, add network adapters with high traffic first.  
-local (lo) is not needed here.  
-```
+    Only listed adapters will be blocked. Others will be allowed through. Defaults to block all (with '+').  
+    If you want to restrict only specific network interface use exact name.  
+    If you want to restrict all interfaces of the same type, use "interface+" to match every interface, since + is the wildcard for iptables.  
+    Eg. To restrict the ethX interfaces, use "eth+". "eth+" is a wildcard for anything starting with eth.  
+    DO NOT use "*". This is not a wildcard and matches nothing!  
+    The less here the better. Safer to block all ('+') but if cannot, add network adapters with high traffic first.  
+    local (lo) is not needed here.  
 
 ```yaml
 iptables_docker_external_network_adapter:
@@ -219,10 +213,8 @@ iptables_docker_external_network_adapter:
 
 * OS tcp ports open to public
 
-```txt
-Ports to allow everyone to connect (will be publicly accessible). Ports here will allow all tcp traffic to these ports from iptables level.  
-Only for ports on OS, not for Docker containers.
-```
+    Ports to allow everyone to connect (will be publicly accessible). Ports here will allow all tcp traffic to these ports from iptables level.  
+    Only for ports on OS, not for Docker containers.
 
 ```yaml
 iptables_docker_global_ports_allow_tcp:
@@ -231,10 +223,8 @@ iptables_docker_global_ports_allow_tcp:
 
 * OS udp ports open to public
 
-```txt
-Ports to allow everyone to connect (will be publicly accessible). Ports here will allow all udp traffic to these ports from iptables level.  
-Only for ports on OS, not for Docker containers.
-```
+    Ports to allow everyone to connect (will be publicly accessible). Ports here will allow all udp traffic to these ports from iptables level.  
+    Only for ports on OS, not for Docker containers.
 
 ```yaml
 iptables_docker_global_ports_allow_udp: []
@@ -242,9 +232,7 @@ iptables_docker_global_ports_allow_udp: []
 
 * Network adapter to restrict for Docker rules
 
-```txt
-Defaults to use the same setup as the network adapter for the OS.
-```
+    Defaults to use the same setup as the network adapter for the OS.
 
 ```yaml
 iptables_docker_swarm_network_adapter: "{{ iptables_docker_external_network_adapter }}"
@@ -255,10 +243,8 @@ iptables_docker_swarm_network_adapter: "{{ iptables_docker_external_network_adap
 
 * Docker tcp ports open to public
 
-```txt
-Docker Swarm ports aren't needed here.
-Add container tcp ports you want open to everyone.
-```
+    Docker Swarm ports aren't needed here.
+    Add container tcp ports you want open to everyone.
 
 ```yaml
 # iptables_docker_swarm_ports_allow_tcp: []
@@ -268,10 +254,8 @@ iptables_docker_swarm_ports_allow_tcp:
 
 * Docker udp ports open to public
 
-```txt
-Docker Swarm ports aren't needed here.
-Add container udp ports you want open to everyone.
-```
+    Docker Swarm ports aren't needed here.
+    Add container udp ports you want open to everyone.
 
 ```yaml
 iptables_docker_swarm_ports_allow_udp: []
