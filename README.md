@@ -162,6 +162,16 @@ iptables_docker_iptables_config_save: /etc/sysconfig/iptables
 iptables_docker_ipset_config_dir: /etc/sysconfig/ipset.d
 ```
 
+* ipset maximum elements (IPs in the allow list)
+
+```txt
+If changed after first creation, must be deleted and re-created manually. 64k IPs should be enough.
+```
+
+```yaml
+iptables_docker_ipset_maxelem: 65536
+```
+
 ## User Settings
 
 * Override Docker server IPs (Optional)
@@ -358,6 +368,29 @@ Only show configuration (from variables)
 
 ```bash
 ansible-playbook iptables_docker.yml --extra-vars "inventory=centos7 iptables_docker_managed=true iptables_docker_show_config=true" -i hosts --tags "iptables_docker_show_config"
+```
+
+## Note about ipset size limit
+
+Important: Make note of the size of "Number of entries". If that number is close to the maxelem size (65536), then you need to delete the ipset "ip_allow" and re-create it with a larger max size.  
+64K ought to be enough for anyone.  
+
+File is in: `templates\ip_allow.set.j2`
+
+```text
+create -exist ip_allow hash:ip family inet hashsize 1024 maxelem 65536
+```
+
+Check size of ipset list:
+
+```bash
+ipset list |grep "Number of entries"
+```
+
+Important output:
+
+```bash
+Number of entries: 3
 ```
 
 ## iptables Command Reference
