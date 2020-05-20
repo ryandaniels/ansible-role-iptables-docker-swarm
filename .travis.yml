@@ -38,7 +38,7 @@ install:
 before_script:
   # Use actual Ansible Galaxy role name for the project directory.
   - cd ../
-  - mv ansible-role-iptables-docker-swarm ryandaniels.$ROLE_NAME
+  - mv ansible-role-iptables-docker ryandaniels.$ROLE_NAME
   - cd ryandaniels.$ROLE_NAME
 
 script:
