@@ -20,6 +20,10 @@
   #   debug: msg="{{ groups['docker_hosts'] | map('extract', hostvars, ['ansible_host']) | list }}"
   - name: iptables Docker | Show iptables_docker_ip_allow_set
     debug: var=iptables_docker_ip_allow_set
+  - name: iptables Docker | Show iptables_docker_external_network_adapter
+    debug: var=iptables_docker_external_network_adapter
+  - name: iptables Docker | Show iptables_docker_swarm_network_adapter
+    debug: var=iptables_docker_swarm_network_adapter
   - name: iptables Docker | Show iptables_docker_global_ports_allow_tcp
     debug: var=iptables_docker_global_ports_allow_tcp
   - name: iptables Docker | Show iptables_docker_global_ports_allow_udp

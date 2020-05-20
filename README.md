@@ -64,6 +64,7 @@ There could be unknown problems with this.. use at your own risk!
 Docker Engine - Community Edition version:
 
 * 19.03.8
+* 19.03.9
 
 Tested in normal Docker mode, and with a 3 node Docker Swarm cluster.  
 
