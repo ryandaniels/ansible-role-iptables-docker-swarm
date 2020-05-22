@@ -263,14 +263,16 @@
     - iptables_config_iptables
 
 #Only save these custom iptables rules. Remove anything Docker related since Docker needs to manage that.
+#Doesn't work - iptables clobbers everything when started/restarted! Must save all and enalbe iptables config to save on restart
+#Docker seems ok, it will remove old stuff / clobber it's own chains
 - block:
   - name: iptables Docker | iptables save
-    # command: service iptables save warn=false # noqa 303
-    shell: |
-      set -o pipefail
-      iptables-save -t filter \
-      |grep -Ev "FORWARD |OUTPUT |DOCKER |DOCKER-INGRESS |DOCKER-ISOLATION|INPUT -p udp " \
-      > {{ iptables_docker_iptables_config_save | quote }}
+    command: service iptables save warn=false # noqa 303
+    # shell: |
+    #   set -o pipefail
+    #   iptables-save -t filter \
+    #   |grep -Ev "FORWARD |OUTPUT |DOCKER |DOCKER-INGRESS |DOCKER-ISOLATION|INPUT -p udp " \
+    #   > {{ iptables_docker_iptables_config_save | quote }}
   - name: iptables Docker | iptables validate save
     shell: iptables-restore -t < {{ iptables_docker_iptables_config_save | quote }}
     changed_when: false
@@ -278,6 +280,23 @@
     - iptables_docker_managed|bool
     - stat_iptables_docker_copy_iptables.changed or iptables_docker_copy_iptables_force|bool
     - iptables_docker_start|bool
+  tags:
+    - iptables_docker
+    - iptables_config
+    - iptables_config_iptables
+
+#Change iptables config: /etc/sysconfig/iptables-config
+- name: iptables Docker | Modify iptables config
+  lineinfile:
+    dest: "{{ iptables_docker_iptables_config }}"
+    regexp: "{{ item.regex }}"
+    line: "{{ item.line }}"
+    backup: no
+  with_items:
+    - {regex: '^IPTABLES_SAVE_ON_STOP=.*', line: 'IPTABLES_SAVE_ON_STOP="yes"'}
+    - {regex: '^IPTABLES_SAVE_ON_RESTART=.*', line: 'IPTABLES_SAVE_ON_RESTART="yes"'}
+  when:
+    - iptables_docker_managed|bool
   tags:
     - iptables_docker
     - iptables_config
