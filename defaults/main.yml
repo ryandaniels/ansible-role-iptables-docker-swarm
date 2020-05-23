@@ -14,6 +14,7 @@ iptables_docker_packages:
   - iptables-services
   - ipset
   - ipset-service
+  - policycoreutils-python #required for semodule
 iptables_docker_copy_ipset_force: false
 iptables_docker_copy_iptables_force: false
 iptables_docker_iptables_config_save: /etc/sysconfig/iptables

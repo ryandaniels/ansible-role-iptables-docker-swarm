@@ -303,6 +303,31 @@
     - iptables_config
     - iptables_config_iptables
 
+#Problem when saving iptables a 2nd time. SELinux blocks it. Bug with iptables or iptables-services??
+#Used below as workaround to allow chmod to modify iptables.save file
+#To reproduce, restart iptables service after setting iptables config to save after restart/stop,
+#ausearch -m AVC,USER_AVC,SELINUX_ERR,USER_SELINUX_ERR -i|tail -55
+#grep "iptables.save" /var/log/audit/audit.log|tail | audit2allow -M iptables_save_chmod
+#or ausearch -c 'chmod' --raw | audit2allow -M iptables_save_chmod
+#semodule -i iptables_save_chmod.pp
+- name: iptables Docker | Copy file selinux_iptables_save_chmod.pp
+  copy:
+    src: "files/selinux_iptables_save_chmod.pp"
+    dest: "/root/selinux_iptables_save_chmod.pp"
+    mode: 0644
+  register: stat_iptables_selinux_iptables_save
+  when:
+    - ansible_selinux is defined
+    - ansible_selinux.status == 'enabled'
+
+- name: iptables Docker | Fix SELinux permissions for iptables save and chmod
+  command: semodule -i /root/selinux_iptables_save_chmod.pp
+  when:
+    - ansible_selinux is defined
+    - ansible_selinux.status == 'enabled'
+    - stat_iptables_selinux_iptables_save.changed
+#End workaround for SELinux and chmod/iptabes save issue on 2nd save (iptables.save file issue)
+
 - name: iptables Docker | Start iptables service
   systemd:
     name: iptables
