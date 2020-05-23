@@ -255,9 +255,9 @@ iptables_docker_swarm_network_adapter: "{{ iptables_docker_external_network_adap
     Add container tcp ports you want open to everyone.
 
 ```yaml
-# iptables_docker_swarm_ports_allow_tcp: []
-iptables_docker_swarm_ports_allow_tcp:
-  - 9000
+iptables_docker_swarm_ports_allow_tcp: []
+# iptables_docker_swarm_ports_allow_tcp:
+#   - 9000
 ```
 
 * Docker udp ports open to public

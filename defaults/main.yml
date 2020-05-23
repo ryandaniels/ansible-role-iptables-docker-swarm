@@ -68,9 +68,9 @@ iptables_docker_swarm_network_adapter: "{{ iptables_docker_external_network_adap
 # If using non-Swarm, consider (also) binding a port to an internal IP for better security.
 # If using Swarm, consider using specific IPs for Docker communication
 # Eg. Docker: docker swarm init --advertise-addr 192.168.100.100 --listen-addr=192.168.100.100 --data-path-addr=192.168.100.100
-# iptables_docker_swarm_ports_allow_tcp: []
-iptables_docker_swarm_ports_allow_tcp:
-  - 9000
+iptables_docker_swarm_ports_allow_tcp: []
+# iptables_docker_swarm_ports_allow_tcp:
+#   - 9000
 
 # Docker Swarm ports aren't needed here. Only add container udp ports you want open to everyone.
 iptables_docker_swarm_ports_allow_udp: []
