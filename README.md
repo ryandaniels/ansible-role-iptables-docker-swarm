@@ -52,6 +52,11 @@ For more information about firewalld and Docker:
 <https://www.tripwire.com/state-of-security/devops/psa-beware-exposing-ports-docker/>  
 <https://docs.docker.com/network/iptables/>  
 
+**SELinux Bug**:  
+Currently there's a bug with SELinux that prevents saving the iptables rules to the iptables.save file (saving iptables rules a 2nd time will fail).  
+Bug report: <https://bugs.centos.org/view.php?id=12648>  
+Workaround has been added to allow chmod to interact with the iptables.save file.  
+
 **WARNING**:  
 Make sure you test in non-production first, I cannot make any guarantees or held responsible.  
 Be careful, this will remove and add iptables rules on the OS. Use with caution.  
@@ -136,6 +141,7 @@ iptables_docker_packages:
   - iptables-services
   - ipset
   - ipset-service
+  - policycoreutils-python #required for semodule
 ```
 
 * Force copy of ipset file to trigger ipset reload
