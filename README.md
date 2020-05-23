@@ -15,7 +15,7 @@ Currently tested and working on CentOS/RHEL 7.
 
 ## Features
 
-* Works with Docker, and Docker Swarm.
+* Works with Docker, and Docker Swarm (aka Docker SwarmKit).
 * Secure by default. Once configured, only Docker IPs can access all containers, and all other OS processes that have open ports on the server.  
 * Simple as possible. The less iptables rules, the faster performance will be (in theory at least).  
 * Automatic. No manually adding ports to the firewall config (if you use a trusted set of IPs)
@@ -26,12 +26,12 @@ Currently tested and working on CentOS/RHEL 7.
 * You don't need to be an expert with iptables to use this.  
 * Works with Docker Swarm's undocumented use of iptables and encrypted overlay networks. (iptables rules are appened to the INPUT chain).
 
-This solution is using `iptables` as the firewall, and `ipset` to allow iptables to have a list of IPs that are allowed.  
+This solution is using `iptables` as the firewall, and `ipset` to allow iptables to have a list of IPs that are allowed. `ipset` also allows you to use a non-continueous range of IPs.  
 
 iptables chains used, and how:  
 **INPUT**, not flushed. Rule inserted at top to jump to custom chain for OS related rules.  
-**DOCKER-USER**, flushed. All Docker (and Docker Swarm) related rules are here to block containers from being exposed to everyone by default. By default only the Docker server IPs are allowed.  
-**FILTERS**, flushed. Custom chain for server's processes (that aren't Docker). By default only the Docker server IPs are allowed.  
+**DOCKER-USER**, flushed. All Docker (and Docker Swarm) related rules are here to block containers from being exposed to everyone by default. By default only the Docker server IPs are allowed. Other IPs and container ports can be added by user.  
+**FILTERS**, flushed. Custom chain for server's processes (that aren't Docker). By default only the Docker server IPs are allowed. Other IPs and container ports can be added by user.  
 
 iptables manual: <http://ipset.netfilter.org/iptables.man.html>  
 
@@ -58,6 +58,7 @@ Impact: Saving the iptables rules a 2nd time will silently fail.
 Workaround has been added so SELinux allows chmod to interact with the iptables.save file.  
 Alternatively you could disable SELinux, but that's not recommended.  
 Bug report: <https://bugs.centos.org/view.php?id=12648>  
+See below for more details about manually performing the workaround.  
 
 **WARNING**:  
 Make sure you test in non-production first, I cannot make any guarantees or held responsible.  
@@ -412,6 +413,56 @@ iptables -S DOCKER-USER
 iptables -S FILTERS
 ```
 
+iptables rules being added (by default), and command to append them into iptables rules:
+
+```iptables
+cat > ansible_iptables_docker-iptables << 'EOF'
+*filter
+:INPUT ACCEPT [0:0]
+:DOCKER-USER - [0:0]
+:FILTERS - [0:0]
+-A INPUT -j FILTERS
+-A DOCKER-USER -m state --state RELATED,ESTABLISHED -j RETURN
+-A DOCKER-USER -i docker_gwbridge -j RETURN
+-A DOCKER-USER -s 172.18.0.0/16 -j RETURN
+-A DOCKER-USER -i docker0 -j RETURN
+-A DOCKER-USER -s 172.17.0.0/16 -j RETURN
+#Below Docker ports open to everyone if uncommented
+#-A DOCKER-USER -p tcp -m tcp -m multiport --dports 8000,8001 -j RETURN
+#-A DOCKER-USER -p udp -m udp -m multiport --dports 9000,9001 -j RETURN
+-A DOCKER-USER -m set ! --match-set ip_allow src -j DROP
+-A DOCKER-USER -j RETURN
+-A FILTERS -p udp -m policy --dir in --pol ipsec -m udp --dport 4789 -m set --match-set ip_allow src -j RETURN
+-A FILTERS -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A FILTERS -p icmp -j ACCEPT
+-A FILTERS -i lo -j ACCEPT
+#Below OS ports open to everyone if uncommented
+-A FILTERS -p tcp -m state --state NEW -m tcp -m multiport --dports 22 -j ACCEPT
+#-A FILTERS -p udp -m udp -m multiport --dports 53,123 -j ACCEPT
+-A FILTERS -m set ! --match-set ip_allow src -j DROP
+-A FILTERS -j RETURN
+COMMIT
+
+EOF
+
+iptables-restore -n < ansible_iptables_docker-iptables
+```
+
+## SELinux manual workaround for iptables and chmod
+
+Bug details: <https://bugs.centos.org/view.php?id=12648>
+
+The problem is when saving iptables a 2nd time, SELinux blocks it since chmodhas a problem with the iptables.save file.
+Use below as workaround to allow chmod to modify iptables.save file if not using the Ansible role.  
+To reproduce, restart iptables service after setting iptables config to save after restart/stop,
+
+```bash
+ausearch -m AVC,USER_AVC,SELINUX_ERR,USER_SELINUX_ERR -i|tail -55
+grep "iptables.save" /var/log/audit/audit.log|tail | audit2allow -M iptables_save_chmod
+#or ausearch -c 'chmod' --raw | audit2allow -M iptables_save_chmod
+semodule -i iptables_save_chmod.pp
+```
+
 ## TODO
 
 * [x] Check for firewalld and fail out if running or enabled
@@ -421,7 +472,7 @@ iptables -S FILTERS
 * [x] add automatic list of docker IPs in allowed list (uses IPs from inventory group docker_hosts)
 * [x] Change auto Docker server trusted IPs so can override
 * [x] confirm "when" and "tags" are ok
-* [ ] Ubuntu? Ubuntu doesn't have iptables-services or ipset-service. has iptables-persistent and ipset-?
+* [ ] Ubuntu? Ubuntu doesn't have iptables-services or ipset-service. has iptables-persistent and ipset-? Easy to add ufw support?
 * [ ] ipv6?? This is for ipv4 only
 * [ ] cleanup iptables.j2 to remove old junk that's commented out and useless
 * [x] test UDP container and OS port
