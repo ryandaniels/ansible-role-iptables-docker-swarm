@@ -53,7 +53,7 @@ For more information about firewalld and Docker:
 <https://docs.docker.com/network/iptables/>  
 
 **SELinux Bug**:  
-Currently there's a bug with SELinux that prevents saving the iptables rules to the iptables.save file.
+Currently there's a bug with SELinux that prevents saving the iptables rules to the iptables.save file.  
 Impact: Saving the iptables rules a 2nd time will silently fail.  
 Workaround has been added so SELinux allows chmod to interact with the iptables.save file.  
 Alternatively you could disable SELinux, but that's not recommended.  
