@@ -267,7 +267,8 @@
 #Docker seems ok, it will remove old stuff / clobber it's own chains
 - block:
   - name: iptables Docker | iptables save
-    command: service iptables save warn=false # noqa 303
+    # command: service iptables save warn=false # noqa 303
+    command: /usr/libexec/iptables/iptables.init save
     # shell: |
     #   set -o pipefail
     #   iptables-save -t filter \
