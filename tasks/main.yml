@@ -310,6 +310,7 @@
 #grep "iptables.save" /var/log/audit/audit.log|tail | audit2allow -M iptables_save_chmod
 #or ausearch -c 'chmod' --raw | audit2allow -M iptables_save_chmod
 #semodule -i iptables_save_chmod.pp
+#https://bugs.centos.org/view.php?id=12648
 - name: iptables Docker | Copy file selinux_iptables_save_chmod.pp
   copy:
     src: "files/selinux_iptables_save_chmod.pp"
