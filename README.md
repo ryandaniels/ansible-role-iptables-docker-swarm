@@ -328,7 +328,7 @@ centoswork2 ansible_host=192.168.100.102
     # Use this role
     iptables_docker_managed: true
   roles:
-  - iptables_docker
+  - ryandaniels.iptables_docker
 ```
 
 ## Usage
@@ -368,7 +368,7 @@ ansible-playbook iptables_docker.yml --extra-vars "inventory=centos7 iptables_do
 Important: Make note of the size of "Number of entries". If that number is close to the maxelem size (65536), then you need to delete the ipset "ip_allow" and re-create it with a larger max size.  
 64K ought to be enough for anyone.  
 
-File is in: `templates\ip_allow.set.j2`
+File is in: `templates/ip_allow.set.j2`
 
 ```text
 create -exist ip_allow hash:ip family inet hashsize 1024 maxelem 65536
