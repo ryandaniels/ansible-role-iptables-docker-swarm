@@ -16,15 +16,15 @@ Currently tested and working on CentOS/RHEL 7.
 ## Features
 
 * Works with Docker, and Docker Swarm (aka Docker SwarmKit).
-* Secure by default. Once configured, only Docker IPs can access all containers, and all other OS processes that have open ports on the server.  
-* Simple as possible. The less iptables rules, the faster performance will be (in theory at least).  
+* Secure by default. Once configured, only Docker IPs can access all containers, and all other OS processes that have open ports on the server.
+* Simple as possible. The less iptables rules, the faster performance will be (in theory at least).
 * Automatic. No manually adding ports to the firewall config (if you use a trusted set of IPs)
-* Add "trusted" IPs that are allowed to communicate with all Docker containers, and all other OS processes that have open ports on the server.  
-* Open specified Docker container ports, or the server's OS ports to the public (everyone) through the firewall, like SSH.  
-* Interfaces can also be specified. By default all interfaces are filtered. You could filter specific network interface(s) and allow all other interfaces (only specify an untrusted interface).  
+* Add "trusted" IPs that are allowed to communicate with all Docker containers, and all other OS processes that have open ports on the server.
+* Open specified Docker container ports, or the server's OS ports to the public (everyone) through the firewall, like SSH.
+* Interfaces can also be specified. By default all interfaces are filtered. You could filter specific network interface(s) and allow all other interfaces (only specify an untrusted interface).
 * Everything done in "offline" mode. So there should be no issues with Docker when iptables rules are activated.
-* You don't need to be an expert with iptables to use this.  
-* Works with Docker Swarm's undocumented use of iptables and encrypted overlay networks. (iptables rules are appened to the INPUT chain).
+* You don't need to be an expert with iptables to use this.
+* Works with Docker Swarm's undocumented use of iptables and encrypted overlay networks. (iptables rules are appeneded to the INPUT chain).
 
 This solution is using `iptables` as the firewall, and `ipset` to allow iptables to have a list of IPs that are allowed. `ipset` also allows you to use a non-continueous range of IPs.  
 
