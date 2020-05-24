@@ -4,11 +4,8 @@
 :FILTERS - [0:0]
 #Can't flush INPUT. wipes out docker swarm encrypted overlay rules
 #-F INPUT
-#Use ansible task instead to add -I INPUT -j FILTERS
+#Use ansible task instead to add -I INPUT -j FILTERS once to top
 #-I INPUT -j FILTERS
-#This is from Docker Swarm encrypted overlay! It appends new rules to INPUT!
-# -A INPUT -p udp -m policy --dir in --pol ipsec -m udp --dport 4789 -m u32 --u32 "0x0>>0x16&0x3c@0xc&0xffffff00=0x100600" -j ACCEPT
-# -A INPUT -p udp -m udp --dport 4789 -m u32 --u32 "0x0>>0x16&0x3c@0xc&0xffffff00=0x100600" -j DROP
 #-A INPUT -j RETURN
 -F DOCKER-USER
 #Needed to allow outbound traffic from containers
@@ -19,18 +16,14 @@
 -A DOCKER-USER -i {{ iptables_docker_bridge_name }} -j RETURN
 -A DOCKER-USER -s {{ iptables_docker_bridge_ips }} -j RETURN
 {% if iptables_docker_swarm_ports_allow_tcp is defined and iptables_docker_swarm_ports_allow_tcp %}
+#Below Docker tcp ports open to everyone
 -A DOCKER-USER -p tcp -m tcp -m multiport --dports {% for ports in iptables_docker_swarm_ports_allow_tcp|sort %}{{ ports }}{% if not loop.last %},{% endif %}{% endfor %} -j RETURN
-#TODO needed? No traffic to the rule
-# -A DOCKER-USER -p tcp -m state --state RELATED,ESTABLISHED -m tcp -m multiport --sports {% for ports in iptables_docker_swarm_ports_allow_tcp|sort %}{{ ports }}{% if not loop.last %},{% endif %}{% endfor %} -j RETURN
 {% endif %}
 {% if iptables_docker_swarm_ports_allow_udp is defined and iptables_docker_swarm_ports_allow_udp %}
+#Below Docker tcp ports open to everyone
 -A DOCKER-USER -p udp -m udp -m multiport --dports {% for ports in iptables_docker_swarm_ports_allow_udp|sort %}{{ ports }}{% if not loop.last %},{% endif %}{% endfor %} -j RETURN
 {% endif %}
 {% if iptables_docker_swarm_network_adapter is defined and "+" in iptables_docker_swarm_network_adapter %}
-# -A DOCKER-USER -m set ! --match-set ip_allow src -j DROP
-#Can't have 2 lines with ! .. never match 2nd! Have to have seperate chains?? Also, don't need since at top is a return for docker interfaces
-# -A DOCKER-USER ! -i {{ iptables_docker_swarm_bridge_name }} -m set ! --match-set ip_allow src -j DROP
-# -A DOCKER-USER ! -i {{ iptables_docker_bridge_name }} -m set ! --match-set ip_allow src -j DROP
 -A DOCKER-USER -m set ! --match-set ip_allow src -j DROP
 {% else %}
 {% for adapter in iptables_docker_swarm_network_adapter -%}
@@ -39,24 +32,20 @@
 {% endif %}
 -A DOCKER-USER -j RETURN
 -F FILTERS
-#Because Docker Swarm encrypted overlay network just appends rules to INPUT. Has to be at top unfortunately
+#Because Docker Swarm encrypted overlay network just appends rules to INPUT. This has to be at top to return to INPUT
 -A FILTERS -p udp -m policy --dir in --pol ipsec -m udp -m set --match-set ip_allow src --dport 4789 -j RETURN
 -A FILTERS -m state --state RELATED,ESTABLISHED -j ACCEPT
 -A FILTERS -p icmp -j ACCEPT
 -A FILTERS -i lo -j ACCEPT
 {% if iptables_docker_global_ports_allow_tcp is defined and iptables_docker_global_ports_allow_tcp %}
-#Below tcp ports open to everyone
+#Below OS tcp ports open to everyone
 -A FILTERS -p tcp -m state --state NEW -m tcp -m multiport --dports {% for ports in iptables_docker_global_ports_allow_tcp|sort %}{{ ports }}{% if not loop.last %},{% endif %}{% endfor %} -j ACCEPT
 {% endif %}
 {% if iptables_docker_global_ports_allow_udp is defined and iptables_docker_global_ports_allow_udp %}
-#Below udp ports open to everyone
+#Below OS udp ports open to everyone
 -A FILTERS -p udp -m udp -m multiport --dports {% for ports in iptables_docker_global_ports_allow_udp|sort %}{{ ports }}{% if not loop.last %},{% endif %}{% endfor %} -j ACCEPT
 {% endif %}
 {% if iptables_docker_external_network_adapter is defined and "+" in iptables_docker_external_network_adapter %}
-# -A FILTERS -m set ! --match-set ip_allow src -j DROP
-#Can't have 2 lines with ! .. never match 2nd!
-# -A FILTERS ! -i {{ iptables_docker_swarm_bridge_name }} -m set ! --match-set ip_allow src -j DROP
-# -A FILTERS ! -i {{ iptables_docker_bridge_name }} -m set ! --match-set ip_allow src -j DROP
 -A FILTERS -m set ! --match-set ip_allow src -j DROP
 {% else %}
 {% for adapter in iptables_docker_external_network_adapter -%}

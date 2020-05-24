@@ -252,8 +252,8 @@ iptables_docker_swarm_network_adapter: "{{ iptables_docker_external_network_adap
 
 * Docker tcp ports open to public
 
+    Add Docker container tcp ports you want open to everyone. For Docker and Docker Swarm.
     Docker Swarm ports aren't needed here.
-    Add container tcp ports you want open to everyone.
 
 ```yaml
 iptables_docker_swarm_ports_allow_tcp: []
@@ -263,8 +263,8 @@ iptables_docker_swarm_ports_allow_tcp: []
 
 * Docker udp ports open to public
 
+    Add Docker container udp ports you want open to everyone. For Docker and Docker Swarm.
     Docker Swarm ports aren't needed here.
-    Add container udp ports you want open to everyone.
 
 ```yaml
 iptables_docker_swarm_ports_allow_udp: []
@@ -465,8 +465,8 @@ semodule -i iptables_save_chmod.pp
 
 ## TODO
 
-* [x] Check for firewalld and fail out if running or enabled
-* [x] Problem with iptables saving Docker rules in iptables rules? Edit iptables-service to not save Docker-* (besides DOCKER-USER)? grep out Docker rules when saving.
+* [x] Check for firewalld and fail if running or enabled
+* [x] Problem with iptables saving Docker rules in iptables rules? Should be fine.
 * [x] iptables_docker_ip_allow_set can't be empty. If it is, there's no point to this since nothing is blocked!
 * [x] add check in network adapters for * and error
 * [x] add automatic list of docker IPs in allowed list (uses IPs from inventory group docker_hosts)
@@ -474,8 +474,8 @@ semodule -i iptables_save_chmod.pp
 * [x] confirm "when" and "tags" are ok
 * [ ] Ubuntu? Ubuntu doesn't have iptables-services or ipset-service. has iptables-persistent and ipset-? Easy to add ufw support?
 * [ ] ipv6?? This is for ipv4 only
-* [ ] cleanup iptables.j2 to remove old junk that's commented out and useless
-* [x] test UDP container and OS port
+* [x] test TCP, UDP Docker container and OS port work
+* [x] test outound traffic from Docker containers work
 * [ ] add test? Molecule? Single node swarm mode only? how to test connection doesn't work from "untrusted" ip?
 
 ## Author
