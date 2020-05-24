@@ -129,6 +129,18 @@
     - iptables_docker
     - iptables_docker_check_service
 
+#Lock down firewalld
+- name: iptables Docker | Mask problem services
+  systemd:
+    name: "{{ item }}"
+    masked: yes
+  ignore_errors: true
+  with_items: "{{ iptables_docker_check_problem_service }}"
+  when:
+    - iptables_docker_managed|bool
+  tags:
+    - iptables_docker
+
 - name: iptables Docker | Ensure required packages are installed
   package:
     name: "{{ iptables_docker_packages|default([]) }}"
