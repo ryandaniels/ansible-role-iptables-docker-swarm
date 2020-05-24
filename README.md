@@ -11,6 +11,9 @@ This was suppose to be simple. Secure Docker with a firewall. But unfortuanately
 
 There could be unknown problems with this.. use at your own risk!  
 
+See also: <https://ryandaniels.ca/blog/secure-docker-with-iptables-firewall-and-ansible/>  
+And about Docker's use of the INPUT chain: <https://ryandaniels.ca/blog/docker-iptables-input-chain/>
+
 Currently tested and working on CentOS/RHEL 7.  
 
 ## Features
@@ -333,6 +336,8 @@ centoswork2 ansible_host=192.168.100.102
 
 ## Usage
 
+Before running make sure you check if you are already using iptables! Nothing should be overwritten/removed, unless you are using the same iptables chains as this.  
+
 By default no tasks will run unless you set `iptables_docker_managed=true`. This is by design to prevent accidents by people who don't RTFM.
 
 ```bash
@@ -351,10 +356,16 @@ Show more verbose output (debug info)
 ansible-playbook iptables_docker.yml --extra-vars "inventory=centos7 iptables_docker_managed=true debug_enabled_default=true" -i hosts-dev
 ```
 
-Do not start iptables service or add config for iptables
+Do not start iptables service or add rules for iptables
 
 ```bash
 ansible-playbook iptables_docker.yml --extra-vars "inventory=centos7 iptables_docker_managed=true iptables_docker_start=false" -i hosts-dev
+```
+
+Force ipset and iptables to update
+
+```bash
+ansible-playbook iptables_docker.yml --extra-vars "inventory=centos7 iptables_docker_managed=true iptables_docker_copy_ipset_force=true iptables_docker_copy_iptables_force=true" -i hosts-dev
 ```
 
 Only show configuration (from variables)
@@ -386,6 +397,21 @@ Important output:
 Number of entries: 3
 ```
 
+## SELinux manual workaround for iptables and chmod
+
+Bug details: <https://bugs.centos.org/view.php?id=12648>
+
+The problem is when saving iptables a 2nd time, SELinux blocks it since chmodhas a problem with the iptables.save file.
+Use below as workaround to allow chmod to modify iptables.save file if not using the Ansible role.  
+To reproduce, restart iptables service after setting iptables config to save after restart/stop,
+
+```bash
+ausearch -m AVC,USER_AVC,SELINUX_ERR,USER_SELINUX_ERR -i|tail -55
+grep "iptables.save" /var/log/audit/audit.log|tail | audit2allow -M iptables_save_chmod
+#or ausearch -c 'chmod' --raw | audit2allow -M iptables_save_chmod
+semodule -i iptables_save_chmod.pp
+```
+
 ## iptables Command Reference
 
 More commands can be found in iptables documentation: <http://ipset.netfilter.org/iptables.man.html>
@@ -413,15 +439,63 @@ iptables -S DOCKER-USER
 iptables -S FILTERS
 ```
 
+## Manual Commands
+
+Check what iptables rules you already have. Make note in case they are lost!
+
+```bash
+iptables -nvL --line-numbers
+```
+
+Install required packages:
+
+```bash
+yum install iptables iptables-services ipset ipset-service
+```
+
+If using SELinux, also install:
+
+```bash
+yum install policycoreutils-python
+```
+
+Configure ipset with your server IPs and other trusted IPs:
+
+```bash
+mkdir -p /etc/sysconfig/ipset.d
+cat > /etc/sysconfig/ipset.d/ip_allow.set  << 'EOF'
+create -exist ip_allow hash:ip family inet hashsize 1024 maxelem 65536
+add ip_allow 192.168.1.123
+add ip_allow 192.168.101.0/24
+add ip_allow 192.168.102.0/24
+EOF
+```
+
+Start, and Enable the ipset service:
+
+```bash
+systemctl status ipset
+systemctl start ipset
+systemctl enable ipset
+```
+
+See what ipset has in it's loaded configuration:
+
+```bash
+ipset list | head
+```
+
 iptables rules being added (by default), and command to append them into iptables rules:
 
 ```iptables
 cat > ansible_iptables_docker-iptables << 'EOF'
 *filter
-:INPUT ACCEPT [0:0]
 :DOCKER-USER - [0:0]
 :FILTERS - [0:0]
--A INPUT -j FILTERS
+#Can't flush INPUT. wipes out docker swarm encrypted overlay rules
+#-F INPUT
+#Use ansible or run manually once instead to add -I INPUT -j FILTERS
+#-I INPUT -j FILTERS
 -A DOCKER-USER -m state --state RELATED,ESTABLISHED -j RETURN
 -A DOCKER-USER -i docker_gwbridge -j RETURN
 -A DOCKER-USER -s 172.18.0.0/16 -j RETURN
@@ -432,6 +506,8 @@ cat > ansible_iptables_docker-iptables << 'EOF'
 #-A DOCKER-USER -p udp -m udp -m multiport --dports 9000,9001 -j RETURN
 -A DOCKER-USER -m set ! --match-set ip_allow src -j DROP
 -A DOCKER-USER -j RETURN
+-F FILTERS
+#Because Docker Swarm encrypted overlay network just appends rules to INPUT. Has to be at top unfortunately
 -A FILTERS -p udp -m policy --dir in --pol ipsec -m udp --dport 4789 -m set --match-set ip_allow src -j RETURN
 -A FILTERS -m state --state RELATED,ESTABLISHED -j ACCEPT
 -A FILTERS -p icmp -j ACCEPT
@@ -444,24 +520,42 @@ cat > ansible_iptables_docker-iptables << 'EOF'
 COMMIT
 
 EOF
+```
 
+Use iptables-restore to add the above rules into iptables. The very important flag is -n. That makes sure we don't flush the iptables rules if we have rules already in Docker (or Docker Swarm).
+
+```bash
 iptables-restore -n < ansible_iptables_docker-iptables
 ```
 
-## SELinux manual workaround for iptables and chmod
-
-Bug details: <https://bugs.centos.org/view.php?id=12648>
-
-The problem is when saving iptables a 2nd time, SELinux blocks it since chmodhas a problem with the iptables.save file.
-Use below as workaround to allow chmod to modify iptables.save file if not using the Ansible role.  
-To reproduce, restart iptables service after setting iptables config to save after restart/stop,
+Next, add a rule to the INPUT chain, so we start using the new rules in FILTERS. It has to be at the top, and only needs to be added once:
 
 ```bash
-ausearch -m AVC,USER_AVC,SELINUX_ERR,USER_SELINUX_ERR -i|tail -55
-grep "iptables.save" /var/log/audit/audit.log|tail | audit2allow -M iptables_save_chmod
-#or ausearch -c 'chmod' --raw | audit2allow -M iptables_save_chmod
-semodule -i iptables_save_chmod.pp
+iptables -I INPUT 1 -j FILTERS
 ```
+
+Save the iptables rules:
+
+```bash
+/usr/libexec/iptables/iptables.init save
+```
+
+Start and Enable the iptables service:
+
+```bash
+systemctl status iptables
+systemctl start iptables
+systemctl enable iptables
+```
+
+If you want to customize the iptables rules to allow more ports to be open to everyone, just add the port to the appropriate rule in the iptables file (tcp or udp), then re-run the same commands from above:
+
+```bash
+iptables-restore -n < iptables-rules.txt
+/usr/libexec/iptables/iptables.init save
+```
+
+Don't miss the Warnings from above! Especially about SELinux.
 
 ## TODO
 
