@@ -157,7 +157,7 @@
     - iptables_docker_pkg_install
 
 # mkdir -p /etc/sysconfig/ipset.d
-- name: iptables Docker | Make ipset config folder
+- name: iptables Docker | Create ipset config folder
   file:
     path: "{{ iptables_docker_ipset_config_dir }}"
     state: directory
@@ -207,6 +207,57 @@
     - iptables_docker
     - iptables_config
     - iptables_config_ipset
+
+#Change iptables config: /etc/sysconfig/iptables-config
+- name: iptables Docker | Modify iptables config
+  lineinfile:
+    dest: "{{ iptables_docker_iptables_config }}"
+    regexp: "{{ item.regex }}"
+    line: "{{ item.line }}"
+    backup: no
+  with_items:
+    - {regex: '^IPTABLES_SAVE_ON_STOP=.*', line: 'IPTABLES_SAVE_ON_STOP="yes"'}
+    - {regex: '^IPTABLES_SAVE_ON_RESTART=.*', line: 'IPTABLES_SAVE_ON_RESTART="yes"'}
+  when:
+    - iptables_docker_managed|bool
+  tags:
+    - iptables_docker
+    - iptables_config
+    - iptables_config_iptables
+
+#Problem when saving iptables a 2nd time. SELinux blocks it. Bug with iptables or iptables-services??
+#Used below as workaround to allow chmod to modify iptables.save file
+#To reproduce, restart iptables service after setting iptables config to save after restart/stop,
+#ausearch -m AVC,USER_AVC,SELINUX_ERR,USER_SELINUX_ERR -i|tail -55
+#grep "iptables.save" /var/log/audit/audit.log|tail | audit2allow -M iptables_save_chmod
+#or ausearch -c 'chmod' --raw | audit2allow -M iptables_save_chmod
+#semodule -i iptables_save_chmod.pp
+#https://bugs.centos.org/view.php?id=12648
+- name: iptables Docker | Copy file selinux_iptables_save_chmod.pp
+  copy:
+    src: "files/selinux_iptables_save_chmod.pp"
+    dest: "/root/selinux_iptables_save_chmod.pp"
+    mode: 0644
+  register: stat_iptables_selinux_iptables_save
+  when:
+    - ansible_selinux is defined
+    - ansible_selinux.status == 'enabled'
+  tags:
+    - iptables_docker
+    - iptables_config
+    - iptables_config_iptables
+
+- name: iptables Docker | Fix SELinux permissions for iptables save and chmod
+  command: semodule -i /root/selinux_iptables_save_chmod.pp
+  when:
+    - ansible_selinux is defined
+    - ansible_selinux.status == 'enabled'
+    - stat_iptables_selinux_iptables_save.changed
+  tags:
+    - iptables_docker
+    - iptables_config
+    - iptables_config_iptables
+#End workaround for SELinux and chmod/iptabes save issue on 2nd save (iptables.save file issue)
 
 - name: iptables Docker | Generate iptables config
   template:
@@ -297,49 +348,6 @@
     - iptables_docker
     - iptables_config
     - iptables_config_iptables
-
-#Change iptables config: /etc/sysconfig/iptables-config
-- name: iptables Docker | Modify iptables config
-  lineinfile:
-    dest: "{{ iptables_docker_iptables_config }}"
-    regexp: "{{ item.regex }}"
-    line: "{{ item.line }}"
-    backup: no
-  with_items:
-    - {regex: '^IPTABLES_SAVE_ON_STOP=.*', line: 'IPTABLES_SAVE_ON_STOP="yes"'}
-    - {regex: '^IPTABLES_SAVE_ON_RESTART=.*', line: 'IPTABLES_SAVE_ON_RESTART="yes"'}
-  when:
-    - iptables_docker_managed|bool
-  tags:
-    - iptables_docker
-    - iptables_config
-    - iptables_config_iptables
-
-#Problem when saving iptables a 2nd time. SELinux blocks it. Bug with iptables or iptables-services??
-#Used below as workaround to allow chmod to modify iptables.save file
-#To reproduce, restart iptables service after setting iptables config to save after restart/stop,
-#ausearch -m AVC,USER_AVC,SELINUX_ERR,USER_SELINUX_ERR -i|tail -55
-#grep "iptables.save" /var/log/audit/audit.log|tail | audit2allow -M iptables_save_chmod
-#or ausearch -c 'chmod' --raw | audit2allow -M iptables_save_chmod
-#semodule -i iptables_save_chmod.pp
-#https://bugs.centos.org/view.php?id=12648
-- name: iptables Docker | Copy file selinux_iptables_save_chmod.pp
-  copy:
-    src: "files/selinux_iptables_save_chmod.pp"
-    dest: "/root/selinux_iptables_save_chmod.pp"
-    mode: 0644
-  register: stat_iptables_selinux_iptables_save
-  when:
-    - ansible_selinux is defined
-    - ansible_selinux.status == 'enabled'
-
-- name: iptables Docker | Fix SELinux permissions for iptables save and chmod
-  command: semodule -i /root/selinux_iptables_save_chmod.pp
-  when:
-    - ansible_selinux is defined
-    - ansible_selinux.status == 'enabled'
-    - stat_iptables_selinux_iptables_save.changed
-#End workaround for SELinux and chmod/iptabes save issue on 2nd save (iptables.save file issue)
 
 - name: iptables Docker | Start iptables service
   systemd:
