@@ -5,7 +5,7 @@ This Ansible Role exists because firewalld and Docker (and Docker Swarm) do not 
 
 Problem being solved: When starting a container in Docker with a "published" port, you have no control and the port is exposed through your server's firewall. Even if you were using iptables, or another firewall on your server. Docker opens that "published" port to everyone, and bypasses your firewall.  
 
-Use case for this solution: Allow trusted IPs to connect to Docker containers (and Docker Swarm containers), along with other open OS ports. With an option to expose specified ports publicly (Docker/Docker Swarm and OS). The trusted IPs are not in the same network IP range, or even network subnet.  
+Use case for this solution: Allow trusted IPs to connect to Docker containers (and Docker Swarm containers), along with other open OS ports. With an option to expose specified ports publicly (Docker/Docker Swarm and OS). The trusted IPs might not be in the same network IP range, or even the same network subnet.  
 
 This was suppose to be simple. Secure Docker with a firewall. But unfortuanately it is not. I've tried to keep this as simple as possible.  
 
