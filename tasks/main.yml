@@ -7,6 +7,15 @@
   tags:
    - always
 
+- name: Add Ubuntu 20.04 override variables
+  include_vars: "ubuntu2004.yml"
+  when:
+    - ansible_distribution == "Ubuntu"
+    - ansible_distribution_version == "20.04"
+    - iptables_docker_managed|bool
+  tags:
+   - always
+
 - name: iptables Docker | Set Docker server IPs for allow list
   set_fact:
     iptables_docker_server_ip_allow_set: "{{ iptables_docker_server_ip_allow_set | default(groups['docker_hosts'] | map('extract', hostvars, ['ansible_host']) | list) }}" # noqa 204
@@ -223,7 +232,7 @@
     - iptables_config_ipset
 
 #source: https://packages.ubuntu.com/focal/ipset-persistent
-- name: iptables Docker | Copy ipset plugins for netfilter (Ubuntu)
+- name: iptables Docker | Copy ipset plugins for netfilter (Ubuntu <= 18.04)
   copy:
     src: "files/ubuntu/iptables-persistent_1.0.14/plugins/{{ item }}"
     dest: "/usr/share/netfilter-persistent/plugins.d/{{ item }}"
@@ -234,6 +243,7 @@
     - 40-ipset
   when:
     - ansible_distribution == "Ubuntu"
+    - ansible_distribution_version <= "18.04"
     - iptables_docker_managed|bool
   tags:
     - iptables_docker
