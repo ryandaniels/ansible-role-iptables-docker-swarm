@@ -382,7 +382,7 @@
 - block:
   - name: iptables Docker | iptables save
     # command: service iptables save warn=false # noqa 303
-    command: /usr/libexec/iptables/iptables.init save
+    command: "{{ iptables_docker_iptables_save_cmd }}"
     # shell: |
     #   set -o pipefail
     #   iptables-save -t filter \
