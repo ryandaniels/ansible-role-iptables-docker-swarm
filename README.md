@@ -428,7 +428,7 @@ List iptables that are active:
 iptables -nvL --line-numbers
 ```
 
-Misc useful commands:
+Misc CentOS/RHEL useful commands:
 
 ```bash
 cat /etc/sysconfig/ipset.d/ip_allow.set
@@ -445,7 +445,20 @@ iptables -S DOCKER-USER
 iptables -S FILTERS
 ```
 
-## Manual Commands
+Misc Ubuntu useful commands:
+
+```bash
+vi /etc/iptables/ipsets
+#Manually add 'flush' before add, if removing IPs manually.
+
+/usr/sbin/netfilter-persistent reload
+
+cat /etc/iptables/ipsets
+
+cat /etc/iptables/rules.v4
+```
+
+## Manual Commands (CentOS/RHEL)
 
 Check what iptables rules you already have. Make note in case they are lost!
 
