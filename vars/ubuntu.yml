@@ -1,6 +1,4 @@
 ---
-iptables_docker_check_problem_service:
-  - firewalld.service
 iptables_docker_packages:
   - iptables
   - iptables-persistent
