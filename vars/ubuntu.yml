@@ -1,7 +1,6 @@
 ---
 iptables_docker_check_problem_service:
   - firewalld.service
-  - ufw
 iptables_docker_packages:
   - iptables
   - iptables-persistent
